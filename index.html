@@ -3,23 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>My Website</title>
-
+  <meta name="description" content="A simple tracker for LSMS sports events and results.">
+  <title>LSMS Sports Tracker</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <main class="container">
-    <h1>Hello, I'm Nevverx</h1>
+  <header class="site-header">
+    <div class="page-width">
+      <p class="eyebrow">LSMS</p>
+      <h1>LSMS Sports Tracker</h1>
+      <p class="intro">Keep up with upcoming sports events and track results in one place.</p>
+    </div>
+  </header>
 
-    <p>
-      This is my first website hosted with GitHub Pages.
-    </p>
+  <main class="page-width content-grid">
+    <section class="panel" aria-labelledby="upcoming-events">
+      <div class="section-heading">
+        <p class="section-number">01</p>
+        <h2 id="upcoming-events">Upcoming events</h2>
+      </div>
+      <p class="empty-state">No upcoming events have been added yet.</p>
+    </section>
 
-    <button id="hello-button">Click me</button>
+    <section class="panel" aria-labelledby="tracker">
+      <div class="section-heading">
+        <p class="section-number">02</p>
+        <h2 id="tracker">Tracker</h2>
+      </div>
+      <p class="empty-state">Results and team progress will appear here.</p>
+    </section>
   </main>
-
-  <script src="script.js"></script>
 </body>
 </html>
