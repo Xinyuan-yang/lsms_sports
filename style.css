@@ -54,7 +54,7 @@ h1 {
 
 .content-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 24px;
   padding: 40px 0 72px;
 }
@@ -89,7 +89,6 @@ h2 {
   }
 
   .content-grid {
-    grid-template-columns: 1fr;
     padding-top: 24px;
   }
 }
