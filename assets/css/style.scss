@@ -93,3 +93,34 @@ h2 {
     width: 100%;
   }
 }
+
+#content-wrapper .inner {
+  display: flex;
+  gap: 24px;
+  width: 1200px;
+  max-width: calc(100% - 48px);
+}
+
+#main-content {
+  float: none;
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+aside#sidebar {
+  float: none;
+  flex: 0 0 120px;
+  width: auto;
+}
+
+@media (max-width: 767px) {
+  #content-wrapper .inner {
+    display: block;
+  }
+
+  #main-content,
+  aside#sidebar {
+    width: 100% !important;
+  }
+}
