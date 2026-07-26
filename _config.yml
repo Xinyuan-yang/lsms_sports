@@ -21,8 +21,8 @@
 title: LSMS Sports Tracker
 email: ""
 description: Proudly presented by the LSMS Sports Coach.
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
+url: "https://xinyuan-yang.github.io"
+baseurl: "/lsms_sports"
 twitter_username: jekyllrb
 github_username:  jekyll
 
