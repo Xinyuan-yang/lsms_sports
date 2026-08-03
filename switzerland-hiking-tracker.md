@@ -6,7 +6,7 @@ permalink: /switzerland-hiking-tracker/
 
 <p class="calculation-intro">Let's conquer Switzerland !</p>
 
-<p class="calculation-intro">Current Cumulated distance : 165km</p>
+<p class="calculation-intro">Current Cumulated distance : 258km</p>
 
 <figure class="hiking-tracker-map">
   <img src="{{ '/Figures/Switzerland.png' | relative_url }}" alt="Map of Switzerland showing the Grand Tour hiking route">
