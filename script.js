@@ -25,8 +25,8 @@ function parseCsv(text) {
     }
 
     cells.push(cell);
-    return cells.slice(0, 4);
-  }).slice(0, 15);
+    return cells;
+  });
 }
 
 function addCell(row, tagName, value) {
@@ -58,13 +58,13 @@ async function renderTracker() {
 
     const header = document.createElement("thead");
     const headerRow = document.createElement("tr");
-    rows[0].forEach((cell) => addCell(headerRow, "th", cell));
+    rows[0].slice(0, 4).forEach((cell) => addCell(headerRow, "th", cell));
     header.append(headerRow);
 
     const body = document.createElement("tbody");
-    rows.slice(1).forEach((cells) => {
+    rows.slice(1, 15).forEach((cells) => {
       const row = document.createElement("tr");
-      cells.forEach((cell) => addCell(row, "td", cell));
+      cells.slice(0, 4).forEach((cell) => addCell(row, "td", cell));
       body.append(row);
     });
 
@@ -75,3 +75,37 @@ async function renderTracker() {
 }
 
 renderTracker();
+
+function columnIndex(columnLabel) {
+  return [...columnLabel.toUpperCase()].reduce(
+    (index, character) => index * 26 + character.charCodeAt(0) - 64,
+    0,
+  ) - 1;
+}
+
+async function renderCurrentCumulatedDistance() {
+  const distance = document.querySelector("#current-cumulated-distance");
+  if (!distance) return;
+
+  const source = distance.dataset.source?.trim();
+  const block = distance.dataset.block?.trim().toUpperCase();
+  const match = block?.match(/^([A-Z]+)([1-9]\d*)$/);
+
+  // Leave the fallback value in place until the source and cell are configured.
+  if (!source || !match) return;
+
+  try {
+    const response = await fetch(source, { cache: "no-store" });
+    if (!response.ok) throw new Error("Unable to load distance data");
+
+    const rows = parseCsv(await response.text());
+    const value = rows[Number(match[2]) - 1]?.[columnIndex(match[1])]?.trim();
+    if (!value) throw new Error("Distance cell is empty");
+
+    distance.textContent = value;
+  } catch (error) {
+    // Retain the fallback value when the Sheet cannot be read.
+  }
+}
+
+renderCurrentCumulatedDistance();
