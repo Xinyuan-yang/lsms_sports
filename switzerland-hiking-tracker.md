@@ -4,7 +4,7 @@ title: Switzerland Hiking Tracker
 permalink: /switzerland-hiking-tracker/
 ---
 
-<p class="calculation-intro">We have conquered Switzerland and are now passing Italy!</p>
+<p class="calculation-intro">We have travelled through Switzerland, Italy, Austria and now passing Slovenia!</p>
 
 <!--
   Set data-source to the normal Google Sheets share URL and data-block to the
