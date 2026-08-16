@@ -83,23 +83,42 @@ function columnIndex(columnLabel) {
   ) - 1;
 }
 
+function getDistanceSource(source, sheetName) {
+  const url = new URL(source, window.location.href);
+  if (!url.hostname.endsWith("docs.google.com")) return source;
+
+  if (!url.pathname.includes("/gviz/tq")) {
+    const documentMatch = url.pathname.match(/\/spreadsheets\/d\/(e\/)?([^/]+)/);
+    if (!documentMatch) throw new Error("Invalid Google Sheets URL");
+
+    url.pathname = `/spreadsheets/d/${documentMatch[1] || ""}${documentMatch[2]}/gviz/tq`;
+    url.search = "";
+    url.hash = "";
+  }
+
+  url.searchParams.set("tqx", "out:csv");
+  if (sheetName) url.searchParams.set("sheet", sheetName);
+  url.searchParams.delete("gid");
+  return url.toString();
+}
+
 async function renderCurrentCumulatedDistance() {
   const distance = document.querySelector("#current-cumulated-distance");
   if (!distance) return;
 
   const source = distance.dataset.source?.trim();
-  const block = distance.dataset.block?.trim().toUpperCase();
-  const match = block?.match(/^([A-Z]+)([1-9]\d*)$/);
+  const block = distance.dataset.block?.trim();
+  const match = block?.match(/^(?:(.+)!)?([A-Z]+)([1-9]\d*)$/i);
 
   // Leave the fallback value in place until the source and cell are configured.
   if (!source || !match) return;
 
   try {
-    const response = await fetch(source, { cache: "no-store" });
+    const response = await fetch(getDistanceSource(source, match[1]), { cache: "no-store" });
     if (!response.ok) throw new Error("Unable to load distance data");
 
     const rows = parseCsv(await response.text());
-    const value = rows[Number(match[2]) - 1]?.[columnIndex(match[1])]?.trim();
+    const value = rows[Number(match[3]) - 1]?.[columnIndex(match[2])]?.trim();
     if (!value) throw new Error("Distance cell is empty");
 
     distance.textContent = value;
