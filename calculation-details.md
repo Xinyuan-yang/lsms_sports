@@ -57,8 +57,8 @@ permalink: /calculation-details/
 
 \[
 \frac{7}{5.5} \times 4 = 5.1\text{ km}
-\] The goal is to complete the main hiking routes in Switzerland!</p>
+\] We will hike across the continents and hopefully, reach New Delhi!</p>
 
 
-<p class="calculation-intro">Alongside the collective effort to complete the Tour of Switzerland, your cumulative distance is shown as the furthest city you would reach along the route.</p>
+<p class="calculation-intro">Alongside the collective effort to travel across the world, your cumulative distance is shown as the furthest city you would reach.</p>
 
