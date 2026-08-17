@@ -5,13 +5,11 @@ permalink: /switzerland-hiking-tracker/
 ---
 
 <p class="calculation-intro"><span
-    id="current-cumulated-distance"
     data-source="https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing"
     data-block="Total!A11">—</span>
 </p>
 
 <p class="calculation-intro"><span
-    id="current-cumulated-distance"
     data-source="https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing"
     data-block="Total!A12">—</span>
 </p>
@@ -24,7 +22,6 @@ permalink: /switzerland-hiking-tracker/
 <p class="calculation-intro">
   Current Cumulated distance :
   <span
-    id="current-cumulated-distance"
     data-source="https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing"
     data-block="Total!B5">—</span>km
 </p>
@@ -32,11 +29,9 @@ permalink: /switzerland-hiking-tracker/
 <p class="calculation-intro">
   Total distance leader :
   <span
-    id="current-cumulated-distance"
     data-source="https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing"
     data-block="Total!B7"> with 
   <span
-    id="current-cumulated-distance"
     data-source="https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing"
     data-block="Total!C7"> </span>km.
 </p>

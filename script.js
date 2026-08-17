@@ -102,12 +102,9 @@ function getDistanceSource(source, sheetName) {
   return url.toString();
 }
 
-async function renderCurrentCumulatedDistance() {
-  const distance = document.querySelector("#current-cumulated-distance");
-  if (!distance) return;
-
-  const source = distance.dataset.source?.trim();
-  const block = distance.dataset.block?.trim();
+async function renderSheetValue(valueElement) {
+  const source = valueElement.dataset.source?.trim();
+  const block = valueElement.dataset.block?.trim();
   const match = block?.match(/^(?:(.+)!)?([A-Z]+)([1-9]\d*)$/i);
 
   // Leave the fallback value in place until the source and cell are configured.
@@ -121,10 +118,12 @@ async function renderCurrentCumulatedDistance() {
     const value = rows[Number(match[3]) - 1]?.[columnIndex(match[2])]?.trim();
     if (!value) throw new Error("Distance cell is empty");
 
-    distance.textContent = value;
+    valueElement.textContent = value;
   } catch (error) {
     // Retain the fallback value when the Sheet cannot be read.
   }
 }
 
-renderCurrentCumulatedDistance();
+document
+  .querySelectorAll("[data-source][data-block]")
+  .forEach((valueElement) => renderSheetValue(valueElement));
