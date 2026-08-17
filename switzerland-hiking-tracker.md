@@ -4,7 +4,17 @@ title: Switzerland Hiking Tracker
 permalink: /switzerland-hiking-tracker/
 ---
 
-<p class="calculation-intro">We have travelled through Switzerland, Italy, Austria and now passing Slovenia!</p>
+<p class="calculation-intro"><span
+    id="current-cumulated-distance"
+    data-source="https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing"
+    data-block="Total!A11">—</span>
+</p>
+
+<p class="calculation-intro"><span
+    id="current-cumulated-distance"
+    data-source="https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing"
+    data-block="Total!A12">—</span>
+</p>
 
 <!--
   Set data-source to the normal Google Sheets share URL and data-block to the
@@ -17,6 +27,18 @@ permalink: /switzerland-hiking-tracker/
     id="current-cumulated-distance"
     data-source="https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing"
     data-block="Total!B5">—</span>km
+</p>
+
+<p class="calculation-intro">
+  Total distance leader :
+  <span
+    id="current-cumulated-distance"
+    data-source="https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing"
+    data-block="Total!B7"> with 
+  <span
+    id="current-cumulated-distance"
+    data-source="https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing"
+    data-block="Total!C7"> </span>km.
 </p>
 
 <figure class="hiking-tracker-map">
