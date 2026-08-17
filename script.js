@@ -76,14 +76,18 @@ async function renderTracker() {
 
 renderTracker();
 
-function columnIndex(columnLabel) {
-  return [...columnLabel.toUpperCase()].reduce(
-    (index, character) => index * 26 + character.charCodeAt(0) - 64,
-    0,
-  ) - 1;
-}
+const liveSheetSource = "https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing";
 
-function getDistanceSource(source, sheetName) {
+const liveSheetValues = [
+  { id: "weekly-message", block: "Total!A10" },
+  { id: "hiking-status", block: "Total!A11" },
+  { id: "hiking-countries", block: "Total!A12" },
+  { id: "current-cumulated-distance", block: "Total!B5" },
+  { id: "total-distance-leader", block: "Total!B7" },
+  { id: "total-distance-leader-distance", block: "Total!C7" },
+];
+
+function getSheetCellSource(source, sheetName, range) {
   const url = new URL(source, window.location.href);
   if (!url.hostname.endsWith("docs.google.com")) return source;
 
@@ -98,24 +102,30 @@ function getDistanceSource(source, sheetName) {
 
   url.searchParams.set("tqx", "out:csv");
   if (sheetName) url.searchParams.set("sheet", sheetName);
+  if (range) url.searchParams.set("range", range);
   url.searchParams.delete("gid");
   return url.toString();
 }
 
-async function renderSheetValue(valueElement) {
-  const source = valueElement.dataset.source?.trim();
-  const block = valueElement.dataset.block?.trim();
+async function renderSheetValue({ id, block }) {
+  const valueElement = document.getElementById(id);
+  if (!valueElement) return;
+
+  const source = liveSheetSource;
   const match = block?.match(/^(?:(.+)!)?([A-Z]+)([1-9]\d*)$/i);
 
   // Leave the fallback value in place until the source and cell are configured.
   if (!source || !match) return;
 
   try {
-    const response = await fetch(getDistanceSource(source, match[1]), { cache: "no-store" });
+    const response = await fetch(
+      getSheetCellSource(source, match[1], `${match[2]}${match[3]}`),
+      { cache: "no-store" },
+    );
     if (!response.ok) throw new Error("Unable to load distance data");
 
     const rows = parseCsv(await response.text());
-    const value = rows[Number(match[3]) - 1]?.[columnIndex(match[2])]?.trim();
+    const value = rows[0]?.[0]?.trim();
     if (!value) throw new Error("Distance cell is empty");
 
     valueElement.textContent = value;
@@ -124,6 +134,8 @@ async function renderSheetValue(valueElement) {
   }
 }
 
-document
-  .querySelectorAll("[data-source][data-block]")
-  .forEach((valueElement) => renderSheetValue(valueElement));
+function renderAllSheetValues() {
+  liveSheetValues.forEach((value) => renderSheetValue(value));
+}
+
+renderAllSheetValues();
