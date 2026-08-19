@@ -14,7 +14,8 @@ function formatKm(value) {
 }
 
 async function fetchRoute() {
-  const response = await fetch("{{ '/assets/data/route.json' | relative_url }}?v={{ site.time | date: '%s' }}");
+  const routeUrl = window.routeUrl || "assets/data/route.json";
+  const response = await fetch(routeUrl);
   if (!response.ok) throw new Error("Route data unavailable");
   return response.json();
 }
