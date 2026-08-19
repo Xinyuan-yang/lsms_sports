@@ -1,0 +1,23 @@
+<!-- Firebase App (the core Firebase SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<!-- Firebase Auth -->
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+<!-- Firebase Firestore -->
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "{{ site.firebase.apiKey }}",
+    authDomain: "{{ site.firebase.authDomain }}",
+    projectId: "{{ site.firebase.projectId }}",
+    storageBucket: "{{ site.firebase.storageBucket }}",
+    messagingSenderId: "{{ site.firebase.messagingSenderId }}",
+    appId: "{{ site.firebase.appId }}"
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  // Anonymous auth: sign in silently on every page load.
+  firebase.auth().signInAnonymously().catch((error) => {
+    console.error("Firebase anonymous sign-in failed:", error);
+  });
+</script>

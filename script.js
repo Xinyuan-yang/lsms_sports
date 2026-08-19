@@ -1,141 +1,248 @@
+// Global Firebase compat SDK is loaded via _includes/firebase-config.html.
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+let globalConfig = null;
+let entriesUnsubscribe = null;
+
+// DOM element references
 const trackerTable = document.querySelector("#tracker-table");
+const leaderboardSection = document.querySelector("#leaderboard-section");
+const entryForm = document.querySelector("#entry-form");
+const formMessage = document.querySelector("#form-message");
+const weeklyMessage = document.querySelector("#weekly-message");
+const totalKmDisplay = document.querySelector("#total-km");
+const hikingStatus = document.querySelector("#hiking-status");
+const hikingCountries = document.querySelector("#hiking-countries");
+const currentCumulatedDistance = document.querySelector("#current-cumulated-distance");
+const totalDistanceLeader = document.querySelector("#total-distance-leader");
+const totalDistanceLeaderDistance = document.querySelector("#total-distance-leader-distance");
 
-function parseCsv(text) {
-  return text.trim().split(/\r?\n/).map((row) => {
-    const cells = [];
-    let cell = "";
-    let quoted = false;
+function formatKm(value) {
+  return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+}
 
-    for (let index = 0; index < row.length; index += 1) {
-      const character = row[index];
-
-      if (character === '"') {
-        if (quoted && row[index + 1] === '"') {
-          cell += '"';
-          index += 1;
-        } else {
-          quoted = !quoted;
-        }
-      } else if (character === "," && !quoted) {
-        cells.push(cell);
-        cell = "";
-      } else {
-        cell += character;
-      }
-    }
-
-    cells.push(cell);
-    return cells;
+function waitForAuth() {
+  return new Promise((resolve) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      unsubscribe();
+      resolve(user);
+    });
   });
 }
 
-function addCell(row, tagName, value) {
-  const cell = document.createElement(tagName);
-  cell.textContent = value;
-  row.append(cell);
+async function loadConfig() {
+  const snapshot = await db.collection("config").doc("global").get();
+  if (!snapshot.exists) {
+    throw new Error("Global config not found");
+  }
+  globalConfig = snapshot.data();
+  return globalConfig;
 }
 
-async function renderTracker() {
-  if (!trackerTable) return;
+function computeWalkingEquivalentKm(durationMinutes, metValue) {
+  const hours = durationMinutes / 60;
+  const equivalentWalkingHours = (metValue * hours) / globalConfig.hikingMet;
+  return equivalentWalkingHours * globalConfig.hikingSpeedKmh;
+}
+
+function aggregateByPerson(entries) {
+  const totals = {};
+  entries.forEach((entry) => {
+    const person = entry.person?.trim();
+    if (!person) return;
+    const km = entry.walkingEquivalentKm || 0;
+    totals[person] = (totals[person] || 0) + km;
+  });
+  return totals;
+}
+
+function computeLeaderboard(entries) {
+  const totals = aggregateByPerson(entries);
+  const ranked = Object.entries(totals)
+    .map(([person, km]) => ({ person, km }))
+    .sort((a, b) => b.km - a.km);
+
+  const totalKm = ranked.reduce((sum, item) => sum + item.km, 0);
+  const top3 = ranked.slice(0, 3);
+  const othersKm = ranked.slice(3).reduce((sum, item) => sum + item.km, 0);
+
+  return { top3, othersKm, totalKm, all: ranked };
+}
+
+function renderLeaderboard({ top3, othersKm, totalKm }) {
+  if (!leaderboardSection) return;
+
+  let html = '<div class="podium">';
+  const medals = ["🥇", "🥈", "🥉"];
+  top3.forEach((entry, index) => {
+    html += `
+      <div class="podium-place podium-place--${index + 1}">
+        <div class="podium-medal">${medals[index]}</div>
+        <div class="podium-person">${escapeHtml(entry.person)}</div>
+        <div class="podium-km">${formatKm(entry.km)} km</div>
+      </div>
+    `;
+  });
+  html += "</div>";
+
+  if (othersKm > 0) {
+    html += `<p class="others-total">Everyone else: <strong>${formatKm(othersKm)} km</strong></p>`;
+  }
+
+  html += `<p class="group-total">Group total: <strong>${formatKm(totalKm)} km</strong></p>`;
+
+  leaderboardSection.innerHTML = html;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function renderMapStatus(totalKm) {
+  if (totalKmDisplay) {
+    totalKmDisplay.textContent = formatKm(totalKm);
+  }
+  if (weeklyMessage) {
+    if (globalConfig?.totalRouteKm) {
+      const percent = Math.min(100, (totalKm / globalConfig.totalRouteKm) * 100).toFixed(1);
+      weeklyMessage.textContent = `The lab has covered ${formatKm(totalKm)} km (${percent}%) of the ${formatKm(globalConfig.totalRouteKm)} km journey to ${globalConfig.destination.name}.`;
+    } else {
+      weeklyMessage.textContent = `The lab has covered ${formatKm(totalKm)} km so far.`;
+    }
+  }
+  if (hikingStatus) {
+    hikingStatus.textContent = `Current progress: ${formatKm(totalKm)} km walked.`;
+  }
+  if (currentCumulatedDistance) {
+    currentCumulatedDistance.textContent = formatKm(totalKm);
+  }
+}
+
+function subscribeToEntries() {
+  if (entriesUnsubscribe) {
+    entriesUnsubscribe();
+  }
+
+  entriesUnsubscribe = db.collection("entries").onSnapshot((snapshot) => {
+    const entries = snapshot.docs.map((doc) => doc.data());
+    const leaderboard = computeLeaderboard(entries);
+    renderLeaderboard(leaderboard);
+    renderMapStatus(leaderboard.totalKm);
+
+    // Update hiking tracker page leader values too.
+    if (totalDistanceLeader && leaderboard.all.length) {
+      totalDistanceLeader.textContent = leaderboard.all[0].person;
+      totalDistanceLeaderDistance.textContent = formatKm(leaderboard.all[0].km);
+    }
+  }, (error) => {
+    console.error("Error loading entries:", error);
+    if (leaderboardSection) {
+      leaderboardSection.innerHTML = "<p class=\"error\">Unable to load leaderboard.</p>";
+    }
+  });
+}
+
+function renderForm() {
+  if (!entryForm) return;
+
+  const sportSelect = entryForm.querySelector("#sport");
+  if (!sportSelect || !globalConfig?.metValues) return;
+
+  sportSelect.innerHTML = '<option value="" disabled selected>Choose a sport</option>';
+  Object.entries(globalConfig.metValues).forEach(([sport, met]) => {
+    const option = document.createElement("option");
+    option.value = sport;
+    option.dataset.met = met;
+    option.textContent = `${sport} (${met} METs)`;
+    sportSelect.append(option);
+  });
+
+  // Default date to today.
+  const dateInput = entryForm.querySelector("#date");
+  if (dateInput) {
+    dateInput.valueAsDate = new Date();
+  }
+
+  entryForm.addEventListener("submit", handleFormSubmit);
+}
+
+function setFormMessage(message, type = "info") {
+  if (!formMessage) return;
+  formMessage.textContent = message;
+  formMessage.className = `form-message form-message--${type}`;
+}
+
+async function handleFormSubmit(event) {
+  event.preventDefault();
+  if (!globalConfig) {
+    setFormMessage("Configuration not loaded yet. Please wait.", "error");
+    return;
+  }
+
+  const formData = new FormData(entryForm);
+  const person = formData.get("person")?.trim();
+  const sport = formData.get("sport");
+  const duration = parseFloat(formData.get("duration"));
+  const date = formData.get("date");
+  const pin = formData.get("pin")?.trim();
+
+  if (!person || !sport || !Number.isFinite(duration) || duration <= 0 || !date || !pin) {
+    setFormMessage("Please fill in all fields correctly.", "error");
+    return;
+  }
+
+  const metValue = globalConfig.metValues[sport];
+  if (!metValue) {
+    setFormMessage("Unknown sport selected.", "error");
+    return;
+  }
+
+  const walkingKm = computeWalkingEquivalentKm(duration, metValue);
+
+  const submitButton = entryForm.querySelector('button[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
+  setFormMessage("Submitting...", "info");
 
   try {
-    const sources = [trackerTable.dataset.source, trackerTable.dataset.fallback];
-    let rows;
-
-    for (const source of sources) {
-      try {
-        const response = await fetch(source, { cache: "no-store" });
-        if (!response.ok) throw new Error("Unable to load tracker data");
-
-        rows = parseCsv(await response.text());
-        if (rows.length) break;
-      } catch (error) {
-        // Try the local snapshot when the live Sheet cannot be reached.
-      }
-    }
-
-    if (!rows?.length) throw new Error("Unable to load tracker data");
-
-    const header = document.createElement("thead");
-    const headerRow = document.createElement("tr");
-    rows[0].slice(0, 4).forEach((cell) => addCell(headerRow, "th", cell));
-    header.append(headerRow);
-
-    const body = document.createElement("tbody");
-    rows.slice(1, 15).forEach((cells) => {
-      const row = document.createElement("tr");
-      cells.slice(0, 4).forEach((cell) => addCell(row, "td", cell));
-      body.append(row);
+    await db.collection("entries").add({
+      person,
+      sport,
+      durationMinutes: duration,
+      metValue,
+      walkingEquivalentKm: Math.round(walkingKm * 100) / 100,
+      date,
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      pin,
     });
 
-    trackerTable.replaceChildren(header, body);
+    entryForm.reset();
+    // Restore default date.
+    const dateInput = entryForm.querySelector("#date");
+    if (dateInput) dateInput.valueAsDate = new Date();
+    setFormMessage(`Added ${formatKm(walkingKm)} km. Great job!`, "success");
   } catch (error) {
-    trackerTable.innerHTML = "<caption>Tracker data is currently unavailable.</caption>";
+    console.error("Submit failed:", error);
+    setFormMessage("Failed to submit. Check your PIN and try again.", "error");
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 }
 
-renderTracker();
-
-const liveSheetSource = "https://docs.google.com/spreadsheets/d/1EN0UQ7RKJAaQbCwJ9omOJpl8YslGg1RwAGddY0xTjh0/edit?usp=sharing";
-
-const liveSheetValues = [
-  { id: "weekly-message", block: "Total!A10" },
-  { id: "hiking-status", block: "Total!A11" },
-  { id: "hiking-countries", block: "Total!A12" },
-  { id: "current-cumulated-distance", block: "Total!B5" },
-  { id: "total-distance-leader", block: "Total!B7" },
-  { id: "total-distance-leader-distance", block: "Total!C7" },
-];
-
-function getSheetCellSource(source, sheetName, range) {
-  const url = new URL(source, window.location.href);
-  if (!url.hostname.endsWith("docs.google.com")) return source;
-
-  if (!url.pathname.includes("/gviz/tq")) {
-    const documentMatch = url.pathname.match(/\/spreadsheets\/d\/(e\/)?([^/]+)/);
-    if (!documentMatch) throw new Error("Invalid Google Sheets URL");
-
-    url.pathname = `/spreadsheets/d/${documentMatch[1] || ""}${documentMatch[2]}/gviz/tq`;
-    url.search = "";
-    url.hash = "";
-  }
-
-  url.searchParams.set("tqx", "out:csv");
-  if (sheetName) url.searchParams.set("sheet", sheetName);
-  if (range) url.searchParams.set("range", range);
-  url.searchParams.delete("gid");
-  return url.toString();
-}
-
-async function renderSheetValue({ id, block }) {
-  const valueElement = document.getElementById(id);
-  if (!valueElement) return;
-
-  const source = liveSheetSource;
-  const match = block?.match(/^(?:(.+)!)?([A-Z]+)([1-9]\d*)$/i);
-
-  // Leave the fallback value in place until the source and cell are configured.
-  if (!source || !match) return;
-
+async function init() {
   try {
-    const response = await fetch(
-      getSheetCellSource(source, match[1], `${match[2]}${match[3]}`),
-      { cache: "no-store" },
-    );
-    if (!response.ok) throw new Error("Unable to load distance data");
-
-    const rows = parseCsv(await response.text());
-    const value = rows[0]?.[0]?.trim();
-    if (!value) throw new Error("Distance cell is empty");
-
-    valueElement.textContent = value;
+    await waitForAuth();
+    await loadConfig();
+    renderForm();
+    subscribeToEntries();
   } catch (error) {
-    // Retain the fallback value when the Sheet cannot be read.
+    console.error("Initialization failed:", error);
+    if (leaderboardSection) {
+      leaderboardSection.innerHTML = "<p class=\"error\">Unable to initialize tracker. Please refresh.</p>";
+    }
   }
 }
 
-function renderAllSheetValues() {
-  liveSheetValues.forEach((value) => renderSheetValue(value));
-}
-
-renderAllSheetValues();
+init();

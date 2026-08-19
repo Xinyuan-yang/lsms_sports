@@ -26,6 +26,16 @@ baseurl: "/lsms_sports"
 twitter_username: jekyllrb
 github_username:  jekyll
 
+# Firebase configuration (public web app credentials).
+# Replace the placeholders after creating the project in the Firebase Console.
+firebase:
+  apiKey: "AIzaSyAjB7tVBNhfw3J3nK33K5NKOaFH-2Kgx2E"
+  authDomain: "lsms-sport-tracker.firebaseapp.com"
+  projectId: "lsms-sport-tracker"
+  storageBucket: "lsms-sport-tracker.firebasestorage.app"
+  messagingSenderId: "488208877328"
+  appId: "1:488208877328:web:152b927fea98af4c324795"
+
 # Build settings
 theme: jekyll-theme-architect
 show_downloads: false
