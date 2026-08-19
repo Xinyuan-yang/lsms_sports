@@ -23,18 +23,25 @@ service cloud.firestore {
     match /entries/{entryId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
-        && request.resource.data.keys().hasAll(['person', 'sport', 'durationMinutes', 'metValue', 'walkingEquivalentKm', 'date', 'submittedAt', 'pin'])
+        // Every entry must include the core fields.
+        && request.resource.data.keys().hasAll(['person', 'sport', 'metValue', 'walkingEquivalentKm', 'date', 'submittedAt', 'pin'])
+        // At least one of duration or distance must be provided.
+        && request.resource.data.keys().hasAny(['durationMinutes', 'distanceKm'])
         && request.resource.data.person is string
         && request.resource.data.sport is string
-        && request.resource.data.durationMinutes is number
-        && request.resource.data.durationMinutes >= 0
         && request.resource.data.metValue is number
         && request.resource.data.metValue > 0
         && request.resource.data.walkingEquivalentKm is number
         && request.resource.data.walkingEquivalentKm >= 0
         && request.resource.data.date is string
         && request.resource.data.submittedAt is timestamp
-        && pinIsValid();
+        && pinIsValid()
+        // Optional durationMinutes validation (must be a non-negative number if present).
+        && (!request.resource.data.keys().hasAll(['durationMinutes']) || (request.resource.data.durationMinutes is number && request.resource.data.durationMinutes >= 0))
+        // Optional distanceKm validation (must be a non-negative number if present).
+        && (!request.resource.data.keys().hasAll(['distanceKm']) || (request.resource.data.distanceKm is number && request.resource.data.distanceKm >= 0))
+        // Pace is required when distanceKm is provided and must be one of the allowed values.
+        && (!request.resource.data.keys().hasAll(['distanceKm']) || (request.resource.data.keys().hasAll(['pace']) && request.resource.data.pace is string && request.resource.data.pace in ['slow', 'medium', 'fast']));
       allow update, delete: if false; // Entries are immutable; delete via console if needed
     }
   }

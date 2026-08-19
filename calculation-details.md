@@ -60,5 +60,45 @@ permalink: /calculation-details/
 \] We will hike across the continents and hopefully, reach New Delhi!</p>
 
 
+<h2 id="distance-based-activities">Distance-based activities</h2>
+
+<p class="calculation-intro">For sports where distance is easier to measure than time — Cycling, E-biking, Running, Jogging, and Hiking — you can enter the distance in kilometres instead of minutes. Choose a pace (slow, medium, or fast) and the tracker converts the distance back into an equivalent hiking distance.</p>
+
+<p class="calculation-intro">The conversion first estimates the time the activity took, using the reference speed for the chosen sport and pace, then applies the same MET-based equivalence as above:</p>
+
+\[
+\text{equivalent walking km}
+=
+\text{distance km}
+\times
+\frac{\text{sport MET}}{\text{hiking MET}}
+\times
+\frac{\text{hiking speed}}{\text{sport speed}}
+\]
+
+<p class="calculation-intro">For example, cycling 20 km at a medium pace (assumed 20 km/h) with a cycling MET of 7.0 gives:</p>
+
+\[
+20 \times \frac{7.0}{5.5} \times \frac{4}{20} = 5.1\text{ km}
+\]
+
+<p class="calculation-intro">If you enter both duration and distance, distance takes precedence. The reference speeds are:</p>
+
+<div class="met-table-wrapper">
+  <table class="met-table">
+    <caption>Reference speeds by sport and pace</caption>
+    <thead>
+      <tr><th scope="col">Sport</th><th scope="col">Slow</th><th scope="col">Medium</th><th scope="col">Fast</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Cycling</td><td>15 km/h</td><td>20 km/h</td><td>25 km/h</td></tr>
+      <tr><td>E-biking</td><td>18 km/h</td><td>22 km/h</td><td>26 km/h</td></tr>
+      <tr><td>Running</td><td>8 km/h</td><td>10 km/h</td><td>12 km/h</td></tr>
+      <tr><td>Jogging</td><td>6 km/h</td><td>7 km/h</td><td>8 km/h</td></tr>
+      <tr><td>Hiking</td><td>3 km/h</td><td>4 km/h</td><td>5 km/h</td></tr>
+    </tbody>
+  </table>
+</div>
+
 <p class="calculation-intro">Alongside the collective effort to travel across the world, your cumulative distance is shown as the furthest city you would reach.</p>
 

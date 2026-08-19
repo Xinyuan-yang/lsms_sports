@@ -17,6 +17,8 @@ const hikingCountries = document.querySelector("#hiking-countries");
 const currentCumulatedDistance = document.querySelector("#current-cumulated-distance");
 const totalDistanceLeader = document.querySelector("#total-distance-leader");
 const totalDistanceLeaderDistance = document.querySelector("#total-distance-leader-distance");
+const distanceRow = document.querySelector("#distance-row");
+const paceRow = document.querySelector("#pace-row");
 
 function formatKm(value) {
   return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
@@ -57,6 +59,17 @@ function computeWalkingEquivalentKm(durationMinutes, metValue) {
   const hours = durationMinutes / 60;
   const equivalentWalkingHours = (metValue * hours) / globalConfig.hikingMet;
   return equivalentWalkingHours * globalConfig.hikingSpeedKmh;
+}
+
+function sportSupportsDistance(sport) {
+  return globalConfig?.sportPaces ? Object.prototype.hasOwnProperty.call(globalConfig.sportPaces, sport) : false;
+}
+
+function computeDurationFromDistance(distanceKm, sport, pace) {
+  const speeds = globalConfig.sportPaces[sport];
+  const speedKmh = speeds?.[pace] || speeds?.medium || 0;
+  if (!speedKmh) return 0;
+  return (distanceKm / speedKmh) * 60;
 }
 
 function aggregateByPerson(entries) {
@@ -158,6 +171,13 @@ function subscribeToEntries() {
   });
 }
 
+function updateDistanceFields(sport) {
+  if (!distanceRow || !paceRow) return;
+  const supportsDistance = sportSupportsDistance(sport);
+  distanceRow.style.display = supportsDistance ? "block" : "none";
+  paceRow.style.display = supportsDistance ? "block" : "none";
+}
+
 function renderForm() {
   if (!entryForm) return;
 
@@ -172,6 +192,10 @@ function renderForm() {
     option.textContent = `${sport} (${met} METs)`;
     sportSelect.append(option);
   });
+
+  // Show/hide distance and pace fields based on the selected sport.
+  sportSelect.addEventListener("change", () => updateDistanceFields(sportSelect.value));
+  updateDistanceFields(sportSelect.value);
 
   // Default date to today.
   const dateInput = entryForm.querySelector("#date");
@@ -199,10 +223,12 @@ async function handleFormSubmit(event) {
   const person = formData.get("person")?.trim();
   const sport = formData.get("sport");
   const duration = parseFloat(formData.get("duration"));
+  const distance = parseFloat(formData.get("distance"));
+  const pace = formData.get("pace") || "medium";
   const date = formData.get("date");
   const pin = formData.get("pin")?.trim();
 
-  if (!person || !sport || !Number.isFinite(duration) || duration <= 0 || !date || !pin) {
+  if (!person || !sport || !date || !pin) {
     setFormMessage("Please fill in all fields correctly.", "error");
     return;
   }
@@ -213,28 +239,59 @@ async function handleFormSubmit(event) {
     return;
   }
 
-  const walkingKm = computeWalkingEquivalentKm(duration, metValue);
+  const supportsDistance = sportSupportsDistance(sport);
+  const hasDuration = Number.isFinite(duration) && duration > 0;
+  const hasDistance = supportsDistance && Number.isFinite(distance) && distance > 0;
+
+  if (!hasDuration && !hasDistance) {
+    setFormMessage("Please enter either a duration or a distance.", "error");
+    return;
+  }
+
+  let durationMinutes;
+  let distanceKm = null;
+  let paceValue = null;
+  let walkingKm;
+
+  if (hasDistance) {
+    distanceKm = Math.round(distance * 100) / 100;
+    paceValue = pace;
+    durationMinutes = Math.round(computeDurationFromDistance(distance, sport, pace) * 100) / 100;
+    walkingKm = computeWalkingEquivalentKm(durationMinutes, metValue);
+  } else {
+    durationMinutes = duration;
+    walkingKm = computeWalkingEquivalentKm(duration, metValue);
+  }
 
   const submitButton = entryForm.querySelector('button[type="submit"]');
   if (submitButton) submitButton.disabled = true;
   setFormMessage("Submitting...", "info");
 
   try {
-    await db.collection("entries").add({
+    const entryData = {
       person,
       sport,
-      durationMinutes: duration,
+      durationMinutes,
       metValue,
       walkingEquivalentKm: Math.round(walkingKm * 100) / 100,
       date,
       submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
       pin,
-    });
+    };
+
+    if (distanceKm !== null) {
+      entryData.distanceKm = distanceKm;
+      entryData.pace = paceValue;
+    }
+
+    await db.collection("entries").add(entryData);
 
     entryForm.reset();
-    // Restore default date.
+    // Restore default date and hide distance/pace fields until a sport is selected.
     const dateInput = entryForm.querySelector("#date");
     if (dateInput) dateInput.valueAsDate = new Date();
+    const sportSelect = entryForm.querySelector("#sport");
+    if (sportSelect) updateDistanceFields(sportSelect.value);
     setFormMessage(`Added ${formatKm(walkingKm)} km. Great job!`, "success");
   } catch (error) {
     console.error("Submit failed:", error);
