@@ -112,10 +112,18 @@ function interpolateColor(color1, color2, ratio) {
 }
 
 function getColorForWeeklyKm(weekKm, minKm, maxKm, config) {
-  const gradient = config.weeklyPaceGradient || { slowColor: "#f44336", fastColor: "#4caf50" };
+  const gradient = config.weeklyPaceGradient || {
+    slowColor: "#f44336",
+    midColor: "#ffeb3b",
+    fastColor: "#4caf50",
+  };
   if (maxKm <= minKm) return gradient.fastColor;
   const ratio = Math.max(0, Math.min(1, (weekKm - minKm) / (maxKm - minKm)));
-  return interpolateColor(gradient.slowColor, gradient.fastColor, ratio);
+
+  if (ratio < 0.5) {
+    return interpolateColor(gradient.slowColor, gradient.midColor, ratio * 2);
+  }
+  return interpolateColor(gradient.midColor, gradient.fastColor, (ratio - 0.5) * 2);
 }
 
 function computeWeeklyProgress(entries, startDateStr) {
@@ -157,10 +165,14 @@ function renderLegend(minKm, maxKm, config) {
   const container = document.querySelector("#map-legend");
   if (!container) return;
 
-  const gradient = config.weeklyPaceGradient || { slowColor: "#f44336", fastColor: "#4caf50" };
+  const gradient = config.weeklyPaceGradient || {
+    slowColor: "#f44336",
+    midColor: "#ffeb3b",
+    fastColor: "#4caf50",
+  };
   container.innerHTML = `
     <div class="map-legend__label">Weekly km</div>
-    <div class="map-legend__bar" style="background: linear-gradient(to right, ${gradient.slowColor}, ${gradient.fastColor});"></div>
+    <div class="map-legend__bar" style="background: linear-gradient(to right, ${gradient.slowColor}, ${gradient.midColor}, ${gradient.fastColor});"></div>
     <div class="map-legend__scale">
       <span>${formatKm(minKm)} km</span>
       <span>${formatKm(maxKm)} km</span>

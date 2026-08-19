@@ -94,9 +94,10 @@ DEFAULT_CONFIG = {
     "defaultPace": "medium",
     # Gradient colors for the weekly progress line on the map.
     # The color for each week is interpolated between slowColor (minimum weekly
-    # km) and fastColor (maximum weekly km) based on that week's total.
+    # km), midColor (middle), and fastColor (maximum weekly km).
     "weeklyPaceGradient": {
         "slowColor": "#f44336",
+        "midColor": "#ffeb3b",
         "fastColor": "#4caf50",
     },
     # Hiking reference: 5.5 METs at 4 km/h.
