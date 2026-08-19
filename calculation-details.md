@@ -62,7 +62,7 @@ permalink: /calculation-details/
 
 <h2 id="distance-based-activities">Distance-based activities</h2>
 
-<p class="calculation-intro">For sports where distance is easier to measure than time — Cycling, E-biking, Running, Jogging, and Hiking — you can enter the distance in kilometres instead of minutes. Choose a pace (slow, medium, or fast) and the tracker converts the distance back into an equivalent hiking distance.</p>
+<p class="calculation-intro">For sports where distance is easier to measure than time — Bicycling, E-biking, Running, Jogging, and Hiking — you can enter the distance in kilometres instead of minutes. Choose a pace (slow, medium, or fast) and the tracker converts the distance back into an equivalent hiking distance.</p>
 
 <p class="calculation-intro">The conversion first estimates the time the activity took, using the reference speed for the chosen sport and pace, then applies the same MET-based equivalence as above:
 \[\text{equivalent walking km} = \text{distance km} \times \frac{\text{sport MET}}{\text{hiking MET}} \times \frac{\text{hiking speed}}{\text{sport speed}}\]</p>
@@ -79,7 +79,7 @@ permalink: /calculation-details/
       <tr><th scope="col">Sport</th><th scope="col">Slow</th><th scope="col">Medium</th><th scope="col">Fast</th></tr>
     </thead>
     <tbody>
-      <tr><td>Cycling</td><td>15 km/h</td><td>20 km/h</td><td>25 km/h</td></tr>
+      <tr><td>Bicycling</td><td>15 km/h</td><td>20 km/h</td><td>25 km/h</td></tr>
       <tr><td>E-biking</td><td>18 km/h</td><td>22 km/h</td><td>26 km/h</td></tr>
       <tr><td>Running</td><td>8 km/h</td><td>10 km/h</td><td>12 km/h</td></tr>
       <tr><td>Jogging</td><td>6 km/h</td><td>7 km/h</td><td>8 km/h</td></tr>

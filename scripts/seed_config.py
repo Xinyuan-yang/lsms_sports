@@ -84,13 +84,13 @@ DEFAULT_CONFIG = {
     # Reference speeds (km/h) for distance-based sports at different paces.
     # Used by the frontend to convert entered distance back into time, then
     # apply the standard MET-based equivalence.
-    "sportPaces": {
-        "Cycling": {"slow": 15, "medium": 20, "fast": 25},
-        "E-biking": {"slow": 18, "medium": 22, "fast": 26},
-        "Running": {"slow": 8, "medium": 10, "fast": 12},
-        "Jogging": {"slow": 6, "medium": 7, "fast": 8},
-        "Hiking": {"slow": 3, "medium": 4, "fast": 5},
-    },
+        "sportPaces": {
+            "Bicycling": {"slow": 15, "medium": 20, "fast": 25},
+            "E-biking": {"slow": 18, "medium": 22, "fast": 26},
+            "Running": {"slow": 8, "medium": 10, "fast": 12},
+            "Jogging": {"slow": 6, "medium": 7, "fast": 8},
+            "Hiking": {"slow": 3, "medium": 4, "fast": 5},
+        },
     "defaultPace": "medium",
     # Hiking reference: 5.5 METs at 4 km/h.
     "hikingMet": 5.5,
