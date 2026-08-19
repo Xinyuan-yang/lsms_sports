@@ -26,6 +26,7 @@ permalink: /switzerland-hiking-tracker/
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="{{ '/script.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
 <script>
+  window.serviceWorkerUrl = "{{ '/sw.js' | relative_url }}";
   window.routeUrl = "{{ '/assets/data/route.json' | relative_url }}?v={{ site.time | date: '%s' }}";
 </script>
 <script src="{{ '/map.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>

@@ -25,6 +25,12 @@ title: LSMS Sports Tracker
     <p class="empty-state">Loading leaderboard…</p>
   </div>
 
+  <h2 id="sport-breakdown-heading">Sport breakdown</h2>
+  <div class="chart-container">
+    <canvas id="sport-chart" aria-label="Sport breakdown by equivalent km" role="img"></canvas>
+    <p id="sport-chart-empty" class="empty-state">Loading sport breakdown…</p>
+  </div>
+
   <h2 id="add-activity-heading">Log your activity</h2>
   <form id="entry-form" class="entry-form">
     <div class="form-row">
@@ -82,4 +88,8 @@ title: LSMS Sports Tracker
   <p>For details of the calculation <a href="{{ '/calculation-details/' | relative_url }}">click here</a>.</p>
 </section>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+  window.serviceWorkerUrl = "{{ '/sw.js' | relative_url }}";
+</script>
 <script src="{{ '/script.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>

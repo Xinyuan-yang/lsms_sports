@@ -24,6 +24,8 @@ const personNewInput = document.querySelector("#person-new");
 const personHiddenInput = document.querySelector("#person");
 const customSportInput = document.querySelector("#custom-sport");
 const customMetInput = document.querySelector("#custom-met");
+const sportChartCanvas = document.querySelector("#sport-chart");
+const sportChartEmpty = document.querySelector("#sport-chart-empty");
 
 function formatKm(value) {
   return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
@@ -132,6 +134,93 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function aggregateBySport(entries) {
+  const totals = {};
+  entries.forEach((entry) => {
+    const sport = entry.sport?.trim();
+    if (!sport) return;
+    totals[sport] = (totals[sport] || 0) + (entry.walkingEquivalentKm || 0);
+  });
+  return Object.entries(totals)
+    .map(([sport, km]) => ({ sport, km }))
+    .sort((a, b) => b.km - a.km);
+}
+
+const SPORT_COLOR_PALETTE = [
+  "#123c2a", // dark green
+  "#2e7d32", // green
+  "#82d5a2", // light green
+  "#ff9800", // orange
+  "#f44336", // red
+  "#355547", // muted green
+  "#5d7165", // grey-green
+  "#c62828", // dark red
+  "#ffb74d", // light orange
+  "#4caf50", // bright green
+];
+
+function renderSportChart(entries) {
+  if (!sportChartCanvas) return;
+
+  const data = aggregateBySport(entries);
+  if (!data.length) {
+    if (sportChartEmpty) sportChartEmpty.style.display = "block";
+    sportChartCanvas.style.display = "none";
+    return;
+  }
+
+  if (sportChartEmpty) sportChartEmpty.style.display = "none";
+  sportChartCanvas.style.display = "block";
+
+  const labels = data.map((d) => d.sport);
+  const values = data.map((d) => d.km);
+  const colors = data.map((_, i) => SPORT_COLOR_PALETTE[i % SPORT_COLOR_PALETTE.length]);
+
+  if (window.sportChartInstance) {
+    window.sportChartInstance.data.labels = labels;
+    window.sportChartInstance.data.datasets[0].data = values;
+    window.sportChartInstance.data.datasets[0].backgroundColor = colors;
+    window.sportChartInstance.update();
+    return;
+  }
+
+  window.sportChartInstance = new Chart(sportChartCanvas, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderWidth: 2,
+        borderColor: "#fff",
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "right",
+          labels: {
+            color: "#17212b",
+            font: { size: 12 },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const value = context.raw;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percent = total ? ((value / total) * 100).toFixed(1) : 0;
+              return `${context.label}: ${formatKm(value)} km (${percent}%)`;
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 function renderMapStatus(totalKm) {
   if (totalKmDisplay) {
     totalKmDisplay.textContent = formatKm(totalKm);
@@ -161,6 +250,7 @@ function subscribeToEntries() {
     const entries = snapshot.docs.map((doc) => doc.data());
     const leaderboard = computeLeaderboard(entries);
     renderLeaderboard(leaderboard);
+    renderSportChart(entries);
     renderMapStatus(leaderboard.totalKm);
     updatePeopleSelect(entries);
 
@@ -419,4 +509,15 @@ async function init() {
   }
 }
 
+function registerServiceWorker() {
+  if ("serviceWorker" in navigator) {
+    const swUrl = window.serviceWorkerUrl || "sw.js";
+    navigator.serviceWorker
+      .register(swUrl)
+      .then((registration) => console.log("[PWA] Service worker registered:", registration.scope))
+      .catch((error) => console.error("[PWA] Service worker registration failed:", error));
+  }
+}
+
 init();
+registerServiceWorker();
