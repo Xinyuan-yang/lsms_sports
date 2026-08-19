@@ -22,6 +22,8 @@ const paceRow = document.querySelector("#pace-row");
 const personSelect = document.querySelector("#person-select");
 const personNewInput = document.querySelector("#person-new");
 const personHiddenInput = document.querySelector("#person");
+const customSportInput = document.querySelector("#custom-sport");
+const customMetInput = document.querySelector("#custom-met");
 
 function formatKm(value) {
   return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
@@ -177,9 +179,23 @@ function subscribeToEntries() {
 
 function updateDistanceFields(sport) {
   if (!distanceRow || !paceRow) return;
-  const supportsDistance = sportSupportsDistance(sport);
+  const supportsDistance = sport && sport !== "__custom__" && sportSupportsDistance(sport);
   distanceRow.style.display = supportsDistance ? "block" : "none";
   paceRow.style.display = supportsDistance ? "block" : "none";
+}
+
+function updateCustomSportFields() {
+  if (!customSportInput || !customMetInput) return;
+  const sportSelect = entryForm?.querySelector("#sport");
+  const isCustom = sportSelect?.value === "__custom__";
+  customSportInput.style.display = isCustom ? "block" : "none";
+  customSportInput.required = isCustom;
+  customMetInput.style.display = isCustom ? "block" : "none";
+  customMetInput.required = isCustom;
+  if (!isCustom) {
+    customSportInput.value = "";
+    customMetInput.value = "";
+  }
 }
 
 function updatePeopleSelect(entries) {
@@ -239,9 +255,18 @@ function renderForm() {
     sportSelect.append(option);
   });
 
-  // Show/hide distance and pace fields based on the selected sport.
-  sportSelect.addEventListener("change", () => updateDistanceFields(sportSelect.value));
+  const customOption = document.createElement("option");
+  customOption.value = "__custom__";
+  customOption.textContent = "+ Custom sport";
+  sportSelect.append(customOption);
+
+  // Show/hide distance, pace, and custom sport fields based on the selection.
+  sportSelect.addEventListener("change", () => {
+    updateDistanceFields(sportSelect.value);
+    updateCustomSportFields();
+  });
   updateDistanceFields(sportSelect.value);
+  updateCustomSportFields();
 
   // Show/hide the new-person text input based on the name selection.
   if (personSelect) {
@@ -281,7 +306,7 @@ async function handleFormSubmit(event) {
 
   const formData = new FormData(entryForm);
   const rawPerson = formData.get("person")?.trim();
-  const sport = formData.get("sport");
+  let sport = formData.get("sport");
   const duration = parseFloat(formData.get("duration"));
   const distance = parseFloat(formData.get("distance"));
   const pace = formData.get("pace") || "medium";
@@ -293,10 +318,20 @@ async function handleFormSubmit(event) {
     return;
   }
 
-  const metValue = globalConfig.metValues[sport];
-  if (!metValue) {
-    setFormMessage("Unknown sport selected.", "error");
-    return;
+  let metValue;
+  if (sport === "__custom__") {
+    sport = formData.get("customSport")?.trim();
+    metValue = parseFloat(formData.get("customMet"));
+    if (!sport || !Number.isFinite(metValue) || metValue <= 0) {
+      setFormMessage("Please provide a custom sport name and a positive MET value.", "error");
+      return;
+    }
+  } else {
+    metValue = globalConfig.metValues[sport];
+    if (!metValue) {
+      setFormMessage("Unknown sport selected.", "error");
+      return;
+    }
   }
 
   const supportsDistance = sportSupportsDistance(sport);
@@ -352,6 +387,7 @@ async function handleFormSubmit(event) {
     if (dateInput) dateInput.valueAsDate = new Date();
     const sportSelect = entryForm.querySelector("#sport");
     if (sportSelect) updateDistanceFields(sportSelect.value);
+    updateCustomSportFields();
     updatePersonInputVisibility();
     setFormMessage(`Added ${formatKm(walkingKm)} km. Great job!`, "success");
   } catch (error) {
