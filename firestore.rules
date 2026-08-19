@@ -1,0 +1,41 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: authenticated user
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Helper: verify the shared group PIN
+    function pinIsValid() {
+      return request.resource.data.pin == get(/databases/$(database)/documents/config/global).data.groupPin;
+    }
+
+    // Global configuration (origin, destination, route, PIN, etc.)
+    match /config/global {
+      allow read: if isSignedIn();
+      allow write: if false; // Updated only by admins in the Firebase Console
+    }
+
+    // Sport activity entries
+    match /entries/{entryId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll(['person', 'sport', 'durationMinutes', 'metValue', 'walkingEquivalentKm', 'date', 'submittedAt', 'pin'])
+        && request.resource.data.person is string
+        && request.resource.data.sport is string
+        && request.resource.data.durationMinutes is number
+        && request.resource.data.durationMinutes >= 0
+        && request.resource.data.metValue is number
+        && request.resource.data.metValue > 0
+        && request.resource.data.walkingEquivalentKm is number
+        && request.resource.data.walkingEquivalentKm >= 0
+        && request.resource.data.date is string
+        && request.resource.data.submittedAt is timestamp
+        && pinIsValid();
+      allow update, delete: if false; // Entries are immutable; delete via console if needed
+    }
+  }
+}

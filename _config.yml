@@ -26,6 +26,16 @@ baseurl: "/lsms_sports"
 twitter_username: jekyllrb
 github_username:  jekyll
 
+# Firebase configuration (public web app credentials).
+# Replace the placeholders after creating the project in the Firebase Console.
+firebase:
+  apiKey: "YOUR_API_KEY"
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com"
+  projectId: "YOUR_PROJECT_ID"
+  storageBucket: "YOUR_PROJECT_ID.appspot.com"
+  messagingSenderId: "YOUR_SENDER_ID"
+  appId: "YOUR_APP_ID"
+
 # Build settings
 theme: jekyll-theme-architect
 show_downloads: false
