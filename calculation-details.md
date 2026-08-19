@@ -64,23 +64,11 @@ permalink: /calculation-details/
 
 <p class="calculation-intro">For sports where distance is easier to measure than time — Cycling, E-biking, Running, Jogging, and Hiking — you can enter the distance in kilometres instead of minutes. Choose a pace (slow, medium, or fast) and the tracker converts the distance back into an equivalent hiking distance.</p>
 
-<p class="calculation-intro">The conversion first estimates the time the activity took, using the reference speed for the chosen sport and pace, then applies the same MET-based equivalence as above:</p>
+<p class="calculation-intro">The conversion first estimates the time the activity took, using the reference speed for the chosen sport and pace, then applies the same MET-based equivalence as above:
+\[\text{equivalent walking km} = \text{distance km} \times \frac{\text{sport MET}}{\text{hiking MET}} \times \frac{\text{hiking speed}}{\text{sport speed}}\]</p>
 
-\[
-\text{equivalent walking km}
-=
-\text{distance km}
-\times
-\frac{\text{sport MET}}{\text{hiking MET}}
-\times
-\frac{\text{hiking speed}}{\text{sport speed}}
-\]
-
-<p class="calculation-intro">For example, cycling 20 km at a medium pace (assumed 20 km/h) with a cycling MET of 7.0 gives:</p>
-
-\[
-20 \times \frac{7.0}{5.5} \times \frac{4}{20} = 5.1\text{ km}
-\]
+<p class="calculation-intro">For example, cycling 20 km at a medium pace (assumed 20 km/h) with a cycling MET of 7.0 gives:
+\[20 \times \frac{7.0}{5.5} \times \frac{4}{20} = 5.1\text{ km}\]</p>
 
 <p class="calculation-intro">If you enter both duration and distance, distance takes precedence. The reference speeds are:</p>
 

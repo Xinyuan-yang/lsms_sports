@@ -123,7 +123,8 @@ async function initMap() {
     subscribeToProgress(config);
   } catch (error) {
     console.error("Map initialization failed:", error);
-    mapContainer.innerHTML = "<p class=\"error\">Unable to load the interactive map. Please refresh.</p>";
+    const details = error?.message ? `: ${error.message}` : "";
+    mapContainer.innerHTML = `<p class="error">Unable to load the interactive map. Please refresh.${details}</p>`;
   }
 }
 
