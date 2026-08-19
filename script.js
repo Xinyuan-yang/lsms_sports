@@ -19,6 +19,9 @@ const totalDistanceLeader = document.querySelector("#total-distance-leader");
 const totalDistanceLeaderDistance = document.querySelector("#total-distance-leader-distance");
 const distanceRow = document.querySelector("#distance-row");
 const paceRow = document.querySelector("#pace-row");
+const personSelect = document.querySelector("#person-select");
+const personNewInput = document.querySelector("#person-new");
+const personHiddenInput = document.querySelector("#person");
 
 function formatKm(value) {
   return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
@@ -157,6 +160,7 @@ function subscribeToEntries() {
     const leaderboard = computeLeaderboard(entries);
     renderLeaderboard(leaderboard);
     renderMapStatus(leaderboard.totalKm);
+    updatePeopleSelect(entries);
 
     // Update hiking tracker page leader values too.
     if (totalDistanceLeader && leaderboard.all.length) {
@@ -178,6 +182,48 @@ function updateDistanceFields(sport) {
   paceRow.style.display = supportsDistance ? "block" : "none";
 }
 
+function updatePeopleSelect(entries) {
+  if (!personSelect) return;
+
+  const names = [...new Set(entries.map((entry) => entry.person?.trim()).filter(Boolean))].sort();
+  const previousValue = personSelect.value;
+
+  personSelect.innerHTML = '<option value="" disabled selected>Choose your name</option>';
+  names.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    personSelect.append(option);
+  });
+
+  const newOption = document.createElement("option");
+  newOption.value = "__new__";
+  newOption.textContent = "+ Add new person";
+  personSelect.append(newOption);
+
+  if (previousValue && (names.includes(previousValue) || previousValue === "__new__")) {
+    personSelect.value = previousValue;
+  }
+
+  // Keep the hidden input in sync if an existing name is selected.
+  if (personHiddenInput && personSelect.value !== "__new__") {
+    personHiddenInput.value = personSelect.value;
+  }
+}
+
+function updatePersonInputVisibility() {
+  if (!personSelect || !personNewInput || !personHiddenInput) return;
+  const isNew = personSelect.value === "__new__";
+  personNewInput.style.display = isNew ? "block" : "none";
+  personNewInput.required = isNew;
+  if (!isNew) {
+    personNewInput.value = "";
+    personHiddenInput.value = personSelect.value;
+  } else {
+    personHiddenInput.value = personNewInput.value.trim();
+  }
+}
+
 function renderForm() {
   if (!entryForm) return;
 
@@ -196,6 +242,20 @@ function renderForm() {
   // Show/hide distance and pace fields based on the selected sport.
   sportSelect.addEventListener("change", () => updateDistanceFields(sportSelect.value));
   updateDistanceFields(sportSelect.value);
+
+  // Show/hide the new-person text input based on the name selection.
+  if (personSelect) {
+    personSelect.addEventListener("change", updatePersonInputVisibility);
+    updatePersonInputVisibility();
+  }
+
+  if (personNewInput) {
+    personNewInput.addEventListener("input", () => {
+      if (personHiddenInput && personSelect.value === "__new__") {
+        personHiddenInput.value = personNewInput.value.trim();
+      }
+    });
+  }
 
   // Default date to today.
   const dateInput = entryForm.querySelector("#date");
@@ -220,7 +280,7 @@ async function handleFormSubmit(event) {
   }
 
   const formData = new FormData(entryForm);
-  const person = formData.get("person")?.trim();
+  const rawPerson = formData.get("person")?.trim();
   const sport = formData.get("sport");
   const duration = parseFloat(formData.get("duration"));
   const distance = parseFloat(formData.get("distance"));
@@ -228,7 +288,7 @@ async function handleFormSubmit(event) {
   const date = formData.get("date");
   const pin = formData.get("pin")?.trim();
 
-  if (!person || !sport || !date || !pin) {
+  if (!rawPerson || !sport || !date || !pin) {
     setFormMessage("Please fill in all fields correctly.", "error");
     return;
   }
@@ -269,7 +329,7 @@ async function handleFormSubmit(event) {
 
   try {
     const entryData = {
-      person,
+      person: rawPerson,
       sport,
       durationMinutes,
       metValue,
@@ -287,11 +347,12 @@ async function handleFormSubmit(event) {
     await db.collection("entries").add(entryData);
 
     entryForm.reset();
-    // Restore default date and hide distance/pace fields until a sport is selected.
+    // Restore default date and hide conditional fields until selections are made.
     const dateInput = entryForm.querySelector("#date");
     if (dateInput) dateInput.valueAsDate = new Date();
     const sportSelect = entryForm.querySelector("#sport");
     if (sportSelect) updateDistanceFields(sportSelect.value);
+    updatePersonInputVisibility();
     setFormMessage(`Added ${formatKm(walkingKm)} km. Great job!`, "success");
   } catch (error) {
     console.error("Submit failed:", error);

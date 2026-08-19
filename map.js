@@ -141,11 +141,15 @@ function computeWeeklyProgress(entries, startDateStr) {
   });
 
   const sortedWeeks = Object.keys(weekMap).map(Number).sort((a, b) => a - b);
+  if (!sortedWeeks.length) return [];
+
+  // Normalize so the first week containing data is labelled "Week 1".
+  const firstWeekIndex = sortedWeeks[0];
   let cumulative = 0;
   return sortedWeeks.map((weekIndex) => {
     cumulative += weekMap[weekIndex];
     return {
-      weekIndex,
+      weekIndex: weekIndex - firstWeekIndex,
       weekKm: weekMap[weekIndex],
       cumulativeKm: cumulative,
     };

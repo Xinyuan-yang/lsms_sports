@@ -28,8 +28,12 @@ title: LSMS Sports Tracker
   <h2 id="add-activity-heading">Log your activity</h2>
   <form id="entry-form" class="entry-form">
     <div class="form-row">
-      <label for="person">Name</label>
-      <input type="text" id="person" name="person" required placeholder="Your name">
+      <label for="person-select">Name</label>
+      <select id="person-select" required>
+        <option value="" disabled selected>Choose your name</option>
+      </select>
+      <input type="text" id="person-new" style="display: none; margin-top: 8px;" placeholder="Your name" aria-label="New person name">
+      <input type="hidden" id="person" name="person">
     </div>
 
     <div class="form-row">
