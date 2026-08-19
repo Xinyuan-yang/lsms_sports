@@ -300,7 +300,7 @@ aside#sidebar {
 /* Activity entry form */
 .entry-form {
   max-width: 480px;
-  margin: 1.5rem 0 2.5rem;
+  margin: 1.5rem auto 2.5rem;
   padding: 24px;
   background: #fff;
   border: 1px solid #dbe5df;
@@ -321,6 +321,7 @@ aside#sidebar {
 .form-row input,
 .form-row select {
   width: 100%;
+  box-sizing: border-box;
   padding: 10px 12px;
   border: 1px solid #c5d2cb;
   border-radius: 8px;
