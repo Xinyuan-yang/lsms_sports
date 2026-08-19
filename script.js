@@ -22,12 +22,25 @@ function formatKm(value) {
   return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
-function waitForAuth() {
-  return new Promise((resolve) => {
+function waitForAuth(timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    let resolved = false;
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      unsubscribe();
-      resolve(user);
+      if (user) {
+        resolved = true;
+        unsubscribe();
+        clearTimeout(timer);
+        console.log("[Tracker] Auth ready");
+        resolve(user);
+      }
     });
+
+    const timer = setTimeout(() => {
+      if (!resolved) {
+        unsubscribe();
+        reject(new Error("Firebase anonymous auth timed out"));
+      }
+    }, timeoutMs);
   });
 }
 
@@ -234,13 +247,20 @@ async function handleFormSubmit(event) {
 async function init() {
   try {
     await waitForAuth();
+    console.log("[Tracker] Loading config...");
     await loadConfig();
+    console.log("[Tracker] Config loaded");
     renderForm();
+    console.log("[Tracker] Subscribing to entries...");
     subscribeToEntries();
+    console.log("[Tracker] Ready");
   } catch (error) {
-    console.error("Initialization failed:", error);
+    console.error("[Tracker] Initialization failed:", error);
     if (leaderboardSection) {
-      leaderboardSection.innerHTML = "<p class=\"error\">Unable to initialize tracker. Please refresh.</p>";
+      leaderboardSection.innerHTML = `<p class="error">Unable to initialize tracker: ${escapeHtml(error.message || "unknown error")}. Please refresh.</p>`;
+    }
+    if (formMessage) {
+      setFormMessage("Tracker failed to load. Please refresh.", "error");
     }
   }
 }
