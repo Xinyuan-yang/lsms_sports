@@ -432,3 +432,33 @@ aside#sidebar {
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
+
+.map-legend {
+  max-width: 240px;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #dbe5df;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(20, 50, 34, 0.08);
+}
+
+.map-legend__label {
+  margin-bottom: 0.4rem;
+  color: #355547;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.map-legend__bar {
+  height: 10px;
+  margin-bottom: 0.4rem;
+  border-radius: 5px;
+}
+
+.map-legend__scale {
+  display: flex;
+  justify-content: space-between;
+  color: #5d7165;
+  font-size: 0.85rem;
+}

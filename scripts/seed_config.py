@@ -92,14 +92,13 @@ DEFAULT_CONFIG = {
             "Hiking": {"slow": 3, "medium": 4, "fast": 5},
         },
     "defaultPace": "medium",
-    # Color scale for the weekly progress gradient on the map.
-    # Each entry gives a max weekly km threshold and its color. The last entry
-    # has no threshold and is used for anything faster.
-    "weeklyPaceColors": [
-        {"maxKmPerWeek": 100, "color": "#f44336", "label": "Slow"},
-        {"maxKmPerWeek": 200, "color": "#ff9800", "label": "Medium"},
-        {"color": "#4caf50", "label": "Fast"},
-    ],
+    # Gradient colors for the weekly progress line on the map.
+    # The color for each week is interpolated between slowColor (minimum weekly
+    # km) and fastColor (maximum weekly km) based on that week's total.
+    "weeklyPaceGradient": {
+        "slowColor": "#f44336",
+        "fastColor": "#4caf50",
+    },
     # Hiking reference: 5.5 METs at 4 km/h.
     "hikingMet": 5.5,
     "hikingSpeedKmh": 4.0,
@@ -109,7 +108,7 @@ DEFAULT_CONFIG = {
 # Keys that are safe to overwrite with current defaults when re-seeding
 # (schema/config values). All other existing keys, such as groupPin,
 # totalRouteKm, routeAssetPath, origin, and destination, are preserved.
-SCHEMA_KEYS = {"metValues", "sportPaces", "defaultPace", "weeklyPaceColors", "hikingMet", "hikingSpeedKmh", "startDate"}
+SCHEMA_KEYS = {"metValues", "sportPaces", "defaultPace", "weeklyPaceGradient", "hikingMet", "hikingSpeedKmh", "startDate"}
 
 
 def main():

@@ -17,6 +17,7 @@ permalink: /switzerland-hiking-tracker/
 
 <figure class="hiking-tracker-map">
   <div id="hiking-map" style="height: 500px; border: 1px solid #d7e3db; border-radius: 8px;"></div>
+  <div id="map-legend" class="map-legend"></div>
 </figure>
 
 <p><a href="{{ '/' | relative_url }}">Return to the sports tracker</a></p>

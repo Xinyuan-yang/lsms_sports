@@ -88,19 +88,34 @@ function getCoordinateAtKm(targetKm) {
   return routeCoordinates[routeCoordinates.length - 1];
 }
 
-function getColorForWeeklyKm(weekKm, config) {
-  const thresholds = config.weeklyPaceColors || [
-    { maxKmPerWeek: 100, color: "#f44336" },
-    { maxKmPerWeek: 200, color: "#ff9800" },
-    { color: "#4caf50" },
-  ];
+function hexToRgb(hex) {
+  const clean = hex.replace("#", "");
+  return {
+    r: parseInt(clean.substring(0, 2), 16),
+    g: parseInt(clean.substring(2, 4), 16),
+    b: parseInt(clean.substring(4, 6), 16),
+  };
+}
 
-  for (const threshold of thresholds) {
-    if (threshold.maxKmPerWeek === undefined || weekKm <= threshold.maxKmPerWeek) {
-      return threshold.color;
-    }
-  }
-  return thresholds[thresholds.length - 1].color;
+function rgbToHex(r, g, b) {
+  return `#${Math.round(r).toString(16).padStart(2, "0")}${Math.round(g).toString(16).padStart(2, "0")}${Math.round(b).toString(16).padStart(2, "0")}`;
+}
+
+function interpolateColor(color1, color2, ratio) {
+  const c1 = hexToRgb(color1);
+  const c2 = hexToRgb(color2);
+  return rgbToHex(
+    c1.r + (c2.r - c1.r) * ratio,
+    c1.g + (c2.g - c1.g) * ratio,
+    c1.b + (c2.b - c1.b) * ratio
+  );
+}
+
+function getColorForWeeklyKm(weekKm, minKm, maxKm, config) {
+  const gradient = config.weeklyPaceGradient || { slowColor: "#f44336", fastColor: "#4caf50" };
+  if (maxKm <= minKm) return gradient.fastColor;
+  const ratio = Math.max(0, Math.min(1, (weekKm - minKm) / (maxKm - minKm)));
+  return interpolateColor(gradient.slowColor, gradient.fastColor, ratio);
 }
 
 function computeWeeklyProgress(entries, startDateStr) {
@@ -138,6 +153,21 @@ function clearWeeklyLayers() {
   window.weeklyLayers = [];
 }
 
+function renderLegend(minKm, maxKm, config) {
+  const container = document.querySelector("#map-legend");
+  if (!container) return;
+
+  const gradient = config.weeklyPaceGradient || { slowColor: "#f44336", fastColor: "#4caf50" };
+  container.innerHTML = `
+    <div class="map-legend__label">Weekly km</div>
+    <div class="map-legend__bar" style="background: linear-gradient(to right, ${gradient.slowColor}, ${gradient.fastColor});"></div>
+    <div class="map-legend__scale">
+      <span>${formatKm(minKm)} km</span>
+      <span>${formatKm(maxKm)} km</span>
+    </div>
+  `;
+}
+
 function renderWeeklyProgress(entries, config) {
   if (!map || !routeCoordinates.length) return;
 
@@ -146,11 +176,17 @@ function renderWeeklyProgress(entries, config) {
   const weeklyProgress = computeWeeklyProgress(entries, config.startDate);
   if (!weeklyProgress.length) return;
 
+  const weekKms = weeklyProgress.map((w) => w.weekKm);
+  const minKm = Math.min(...weekKms);
+  const maxKm = Math.max(...weekKms);
+
+  renderLegend(minKm, maxKm, config);
+
   weeklyProgress.forEach((week, index) => {
     const startKm = index === 0 ? 0 : weeklyProgress[index - 1].cumulativeKm;
     const endKm = week.cumulativeKm;
     const segmentCoords = getCoordinatesBetween(startKm, endKm);
-    const color = getColorForWeeklyKm(week.weekKm, config);
+    const color = getColorForWeeklyKm(week.weekKm, minKm, maxKm, config);
 
     if (segmentCoords.length >= 2) {
       const lineLayer = L.polyline(segmentCoords, {
