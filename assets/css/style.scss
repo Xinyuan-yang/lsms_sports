@@ -373,3 +373,33 @@ aside#sidebar {
     min-height: auto !important;
   }
 }
+
+/* Map progress bar */
+#map-progress {
+  display: block;
+  width: 100%;
+  height: 20px;
+  margin: 1rem 0 1.5rem;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #c5d2cb;
+  background: #edf5ef;
+}
+
+#map-progress::-webkit-progress-bar {
+  background: #edf5ef;
+}
+
+#map-progress::-webkit-progress-value {
+  background: #2e7d32;
+  transition: width 0.5s ease;
+}
+
+#map-progress::-moz-progress-bar {
+  background: #2e7d32;
+  transition: width 0.5s ease;
+}
+
+.hiking-tracker-map #hiking-map {
+  background: #e8f0e9;
+}
