@@ -57,6 +57,9 @@ def fetch_ors_route(origin, destination, api_key):
         "instructions": False,
         "preference": "recommended",
         "radiuses": [-1, -1],
+        "options": {
+            "avoid_features": ["ferries"],
+        },
     }
     response = requests.post(ORS_BASE_URL, headers=headers, json=payload, timeout=120)
     if not response.ok:
