@@ -7,25 +7,58 @@ title: LSMS Sports Tracker
   <h1 id="upcoming-events">Upcoming events</h1>
   <div class="event-card">
     <img src="{{ '/Figures/Midi-ptanque-1536x864.jpeg' | relative_url }}" alt="Pétanque event">
-    <div class="event-card__details">Pétanque Thursday 30th July </div>
+    <div class="event-card__details">Pétanque Thursday 30th July</div>
   </div>
 </section>
 
 <section aria-labelledby="tracker">
   <h1 id="tracker">Tracker</h1>
 
-  <p class="calculation-intro"> <span id="weekly-message">—</span>.</p>
-  <p class="calculation-intro"> You can view the total distance covered by the lab via <a href="{{ '/switzerland-hiking-tracker/' | relative_url }}">the World Hiking Tracker map.</a></p>
-  <div class="tracker-table-wrapper">
-    <table
-      id="tracker-table"
-      data-source="https://docs.google.com/spreadsheets/d/e/2PACX-1vS72e4-KpGD72Qtr_MyYdQAq23BYYC6Hik4bm5ICWgdnFUIKNdIxuevbWneX5_4AWzpYvsUoQCNp-1I/pub?gid=0&amp;single=true&amp;output=csv"
-      data-fallback="{{ '/data/tracker.csv' | relative_url }}">
-      <caption class="visually-hidden">LSMS sports tracker</caption>
-    </table>
+  <p class="calculation-intro"><span id="weekly-message">Loading progress…</span></p>
+  <p class="calculation-intro">
+    You can view our journey on
+    <a href="{{ '/switzerland-hiking-tracker/' | relative_url }}">the interactive hiking map</a>.
+  </p>
+
+  <h2 id="leaderboard-heading">Leaderboard</h2>
+  <div id="leaderboard-section" class="leaderboard">
+    <p class="empty-state">Loading leaderboard…</p>
   </div>
-  <p>For details of calculation of works <a href="{{ '/calculation-details/' | relative_url }}">click here.</a></p>
- 
+
+  <h2 id="add-activity-heading">Log your activity</h2>
+  <form id="entry-form" class="entry-form">
+    <div class="form-row">
+      <label for="person">Name</label>
+      <input type="text" id="person" name="person" required placeholder="Your name">
+    </div>
+
+    <div class="form-row">
+      <label for="sport">Sport</label>
+      <select id="sport" name="sport" required>
+        <option value="" disabled selected>Choose a sport</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="duration">Duration (minutes)</label>
+      <input type="number" id="duration" name="duration" min="1" required placeholder="60">
+    </div>
+
+    <div class="form-row">
+      <label for="date">Date</label>
+      <input type="date" id="date" name="date" required>
+    </div>
+
+    <div class="form-row">
+      <label for="pin">Group PIN</label>
+      <input type="password" id="pin" name="pin" required placeholder="Ask your admin">
+    </div>
+
+    <button type="submit" class="button">Add activity</button>
+    <p id="form-message" class="form-message"></p>
+  </form>
+
+  <p>For details of the calculation <a href="{{ '/calculation-details/' | relative_url }}">click here</a>.</p>
 </section>
 
 <script src="{{ '/script.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>

@@ -219,3 +219,157 @@ aside#sidebar {
     width: 100% !important;
   }
 }
+
+/* Leaderboard / podium */
+.leaderboard {
+  margin: 1.5rem 0 2.5rem;
+}
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 1.5rem;
+}
+
+.podium-place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 140px;
+  padding: 16px 12px;
+  background: #f7faf8;
+  border: 1px solid #dbe5df;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.podium-place--1 {
+  order: 2;
+  min-height: 200px;
+  background: #fff8e1;
+  border-color: #ffd54f;
+}
+
+.podium-place--2 {
+  order: 1;
+  min-height: 160px;
+  background: #f5f5f5;
+  border-color: #bdbdbd;
+}
+
+.podium-place--3 {
+  order: 3;
+  min-height: 140px;
+  background: #fff3e0;
+  border-color: #ffcc80;
+}
+
+.podium-medal {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.podium-person {
+  font-weight: 700;
+  font-size: 1.1rem;
+  word-break: break-word;
+}
+
+.podium-km {
+  margin-top: 4px;
+  color: #355547;
+  font-weight: 600;
+}
+
+.others-total,
+.group-total {
+  text-align: center;
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+}
+
+.group-total {
+  font-size: 1.25rem;
+  color: #123c2a;
+}
+
+/* Activity entry form */
+.entry-form {
+  max-width: 480px;
+  margin: 1.5rem 0 2.5rem;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #dbe5df;
+  border-radius: 12px;
+}
+
+.form-row {
+  margin-bottom: 16px;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #17212b;
+}
+
+.form-row input,
+.form-row select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #c5d2cb;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #fff;
+}
+
+.form-row input:focus,
+.form-row select:focus {
+  outline: 2px solid #82d5a2;
+  border-color: #82d5a2;
+}
+
+.form-message {
+  min-height: 1.5em;
+  margin: 12px 0 0;
+  font-weight: 600;
+}
+
+.form-message--info {
+  color: #355547;
+}
+
+.form-message--success {
+  color: #2e7d32;
+}
+
+.form-message--error {
+  color: #c62828;
+}
+
+.error {
+  color: #c62828;
+}
+
+.empty-state {
+  color: #5f6d65;
+}
+
+@media (max-width: 600px) {
+  .podium {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .podium-place {
+    order: 0 !important;
+    width: 100%;
+    max-width: 280px;
+    min-height: auto !important;
+  }
+}
