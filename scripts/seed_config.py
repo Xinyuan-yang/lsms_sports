@@ -51,60 +51,77 @@ def generate_pin(length: int = 6) -> str:
     return "".join(secrets.choice("0123456789") for _ in range(length))
 
 
+DEFAULT_CONFIG = {
+    "origin": DEFAULT_ORIGIN,
+    "destination": DEFAULT_DESTINATION,
+    # routeGeoJson and totalRouteKm will be filled by the route generator.
+    "routeGeoJson": None,
+    "totalRouteKm": None,
+    "startDate": "2026-07-01",
+    # MET lookup table used by the frontend when computing walking-equivalent km.
+    "metValues": {
+        "Jogging": 7.5,
+        "Running": 9.0,
+        "Bicycling": 7.0,
+        "E-biking": 6.0,
+        "Aerobics": 7.3,
+        "Gym Exercise": 5.0,
+        "Basketball": 8.0,
+        "Cricket": 4.8,
+        "Beach Volley": 8.0,
+        "Football": 8.0,
+        "Boxing": 9.3,
+        "Climbing": 9.0,
+        "Hiking": 5.5,
+        "Tennis": 7.0,
+        "Table tennis": 4.0,
+        "Badminton": 8.0,
+        "Skating": 7.0,
+        "Skiing": 7.0,
+        "Karting": 5.6,
+        "Swimming": 7.0,
+    },
+    # Reference speeds (km/h) for distance-based sports at different paces.
+    # Used by the frontend to convert entered distance back into time, then
+    # apply the standard MET-based equivalence.
+    "sportPaces": {
+        "Cycling": {"slow": 15, "medium": 20, "fast": 25},
+        "E-biking": {"slow": 18, "medium": 22, "fast": 26},
+        "Running": {"slow": 8, "medium": 10, "fast": 12},
+        "Jogging": {"slow": 6, "medium": 7, "fast": 8},
+        "Hiking": {"slow": 3, "medium": 4, "fast": 5},
+    },
+    "defaultPace": "medium",
+    # Hiking reference: 5.5 METs at 4 km/h.
+    "hikingMet": 5.5,
+    "hikingSpeedKmh": 4.0,
+}
+
+
+# Keys that are safe to overwrite with current defaults when re-seeding
+# (schema/config values). All other existing keys, such as groupPin,
+# totalRouteKm, routeAssetPath, origin, and destination, are preserved.
+SCHEMA_KEYS = {"metValues", "sportPaces", "defaultPace", "hikingMet", "hikingSpeedKmh", "startDate"}
+
+
 def main():
     db = init_firebase()
 
-    pin = generate_pin()
-    config = {
-        "origin": DEFAULT_ORIGIN,
-        "destination": DEFAULT_DESTINATION,
-        "groupPin": pin,
-        # routeGeoJson and totalRouteKm will be filled by the route generator.
-        "routeGeoJson": None,
-        "totalRouteKm": None,
-        "startDate": "2026-07-01",
-        # MET lookup table used by the frontend when computing walking-equivalent km.
-        "metValues": {
-            "Jogging": 7.5,
-            "Running": 9.0,
-            "Bicycling": 7.0,
-            "E-biking": 6.0,
-            "Aerobics": 7.3,
-            "Gym Exercise": 5.0,
-            "Basketball": 8.0,
-            "Cricket": 4.8,
-            "Beach Volley": 8.0,
-            "Football": 8.0,
-            "Boxing": 9.3,
-            "Climbing": 9.0,
-            "Hiking": 5.5,
-            "Tennis": 7.0,
-            "Table tennis": 4.0,
-            "Badminton": 8.0,
-            "Skating": 7.0,
-            "Skiing": 7.0,
-            "Karting": 5.6,
-            "Swimming": 7.0,
-        },
-        # Reference speeds (km/h) for distance-based sports at different paces.
-        # Used by the frontend to convert entered distance back into time, then
-        # apply the standard MET-based equivalence.
-        "sportPaces": {
-            "Cycling": {"slow": 15, "medium": 20, "fast": 25},
-            "E-biking": {"slow": 18, "medium": 22, "fast": 26},
-            "Running": {"slow": 8, "medium": 10, "fast": 12},
-            "Jogging": {"slow": 6, "medium": 7, "fast": 8},
-            "Hiking": {"slow": 3, "medium": 4, "fast": 5},
-        },
-        "defaultPace": "medium",
-        # Hiking reference: 5.5 METs at 4 km/h.
-        "hikingMet": 5.5,
-        "hikingSpeedKmh": 4.0,
-    }
+    config_ref = db.collection("config").document("global")
+    existing = config_ref.get().to_dict() or {}
 
-    db.collection("config").document("global").set(config)
+    # Start with defaults and overlay existing data, then re-apply schema updates.
+    config = {**DEFAULT_CONFIG, **existing}
+    for key in SCHEMA_KEYS:
+        config[key] = DEFAULT_CONFIG[key]
+
+    # Generate a PIN only for fresh projects.
+    if "groupPin" not in config:
+        config["groupPin"] = generate_pin()
+
+    config_ref.set(config)
     print("Config document created/updated at config/global")
-    print(f"Group PIN (share with members): {pin}")
+    print(f"Group PIN (share with members): {config['groupPin']}")
     print("Save this PIN somewhere safe — it is required to submit activities.")
 
 

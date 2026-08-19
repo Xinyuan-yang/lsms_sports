@@ -9,3 +9,8 @@ vendor
 .env
 service-account.json
 *.json.key
+__pycache__/
+
+# Local tool state
+.serena/
+opencode.json
