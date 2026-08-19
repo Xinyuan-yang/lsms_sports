@@ -33,7 +33,7 @@ function subscribeToProgress(config) {
     const entries = snapshot.docs.map((doc) => doc.data());
     const totalKm = entries.reduce((sum, entry) => sum + (entry.walkingEquivalentKm || 0), 0);
     renderProgress(totalKm, config);
-    if (map) renderCompletedPath(totalKm);
+    if (map) renderWeeklyProgress(entries, config);
   });
 }
 
@@ -68,24 +68,113 @@ function getCompletedCoordinates(targetKm) {
   return completed;
 }
 
-function renderCompletedPath(totalKm) {
+function getCoordinatesBetween(startKm, endKm) {
+  const segment = [];
+  let started = false;
+  for (let i = 0; i < routeCoordinates.length; i += 1) {
+    if (routeDistances[i] >= startKm) started = true;
+    if (started) {
+      segment.push(routeCoordinates[i]);
+      if (routeDistances[i] >= endKm) break;
+    }
+  }
+  return segment;
+}
+
+function getCoordinateAtKm(targetKm) {
+  for (let i = 0; i < routeCoordinates.length; i += 1) {
+    if (routeDistances[i] >= targetKm) return routeCoordinates[i];
+  }
+  return routeCoordinates[routeCoordinates.length - 1];
+}
+
+function getColorForWeeklyKm(weekKm, config) {
+  const thresholds = config.weeklyPaceColors || [
+    { maxKmPerWeek: 100, color: "#f44336" },
+    { maxKmPerWeek: 200, color: "#ff9800" },
+    { color: "#4caf50" },
+  ];
+
+  for (const threshold of thresholds) {
+    if (threshold.maxKmPerWeek === undefined || weekKm <= threshold.maxKmPerWeek) {
+      return threshold.color;
+    }
+  }
+  return thresholds[thresholds.length - 1].color;
+}
+
+function computeWeeklyProgress(entries, startDateStr) {
+  const start = new Date(startDateStr);
+  const weekMap = {};
+
+  entries.forEach((entry) => {
+    if (!entry.date) return;
+    const entryDate = new Date(entry.date);
+    if (Number.isNaN(entryDate.getTime())) return;
+    const daysDiff = Math.floor((entryDate - start) / (1000 * 60 * 60 * 24));
+    const weekIndex = Math.floor(daysDiff / 7);
+    if (weekIndex < 0) return;
+    weekMap[weekIndex] = (weekMap[weekIndex] || 0) + (entry.walkingEquivalentKm || 0);
+  });
+
+  const sortedWeeks = Object.keys(weekMap).map(Number).sort((a, b) => a - b);
+  let cumulative = 0;
+  return sortedWeeks.map((weekIndex) => {
+    cumulative += weekMap[weekIndex];
+    return {
+      weekIndex,
+      weekKm: weekMap[weekIndex],
+      cumulativeKm: cumulative,
+    };
+  });
+}
+
+function clearWeeklyLayers() {
+  if (window.weeklyLayers) {
+    window.weeklyLayers.forEach((layer) => {
+      if (layer) map.removeLayer(layer);
+    });
+  }
+  window.weeklyLayers = [];
+}
+
+function renderWeeklyProgress(entries, config) {
   if (!map || !routeCoordinates.length) return;
 
-  const completedCoords = getCompletedCoordinates(totalKm);
-  const completedLayer = window.completedRouteLayer;
-  if (completedLayer) {
-    map.removeLayer(completedLayer);
-  }
+  clearWeeklyLayers();
 
-  if (completedCoords.length >= 2) {
-    window.completedRouteLayer = L.polyline(completedCoords, {
-      color: "#2e7d32",
-      weight: 5,
-      opacity: 0.9,
-      lineCap: "round",
-      lineJoin: "round",
+  const weeklyProgress = computeWeeklyProgress(entries, config.startDate);
+  if (!weeklyProgress.length) return;
+
+  weeklyProgress.forEach((week, index) => {
+    const startKm = index === 0 ? 0 : weeklyProgress[index - 1].cumulativeKm;
+    const endKm = week.cumulativeKm;
+    const segmentCoords = getCoordinatesBetween(startKm, endKm);
+    const color = getColorForWeeklyKm(week.weekKm, config);
+
+    if (segmentCoords.length >= 2) {
+      const lineLayer = L.polyline(segmentCoords, {
+        color,
+        weight: 5,
+        opacity: 0.9,
+        lineCap: "round",
+        lineJoin: "round",
+      }).addTo(map);
+      window.weeklyLayers.push(lineLayer);
+    }
+
+    const markerCoord = getCoordinateAtKm(endKm);
+    const marker = L.marker(markerCoord, {
+      icon: L.divIcon({
+        className: "week-marker",
+        html: `<span style="background:${color}">${week.weekIndex + 1}</span>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      }),
     }).addTo(map);
-  }
+    marker.bindPopup(`Week ${week.weekIndex + 1}: ${formatKm(week.weekKm)} km`);
+    window.weeklyLayers.push(marker);
+  });
 }
 
 async function initMap() {

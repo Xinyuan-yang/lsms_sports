@@ -411,3 +411,24 @@ aside#sidebar {
 .hiking-tracker-map #hiking-map {
   background: #e8f0e9;
 }
+
+/* Week-end markers on the hiking map */
+.week-marker {
+  background: transparent;
+  border: none;
+}
+
+.week-marker span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #fff;
+  background: #4caf50;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
