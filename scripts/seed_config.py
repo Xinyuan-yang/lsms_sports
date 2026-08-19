@@ -75,12 +75,14 @@ DEFAULT_CONFIG = {
         "Hiking": 5.5,
         "Tennis": 7.0,
         "Table tennis": 4.0,
-        "Badminton": 8.0,
-        "Skating": 7.0,
-        "Skiing": 7.0,
-        "Karting": 5.6,
-        "Swimming": 7.0,
-    },
+            "Badminton": 8.0,
+            "Skating": 7.0,
+            "Skiing": 7.0,
+            "Karting": 5.6,
+            "Swimming": 7.0,
+            "Volleyball": 8.0,
+            "Landsailing": 4.0,
+        },
     # Reference speeds (km/h) for distance-based sports at different paces.
     # Used by the frontend to convert entered distance back into time, then
     # apply the standard MET-based equivalence.
