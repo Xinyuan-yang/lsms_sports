@@ -4,16 +4,25 @@ title: Switzerland Hiking Tracker
 permalink: /switzerland-hiking-tracker/
 ---
 
-<p class="calculation-intro"><span id="hiking-status">Loading progress…</span></p>
+<div class="journey-card">
+  <div class="journey-card__route">
+    <span class="journey-card__origin" id="journey-origin">—</span>
+    <span class="journey-card__arrow" aria-hidden="true">→</span>
+    <span class="journey-card__destination" id="journey-destination">—</span>
+  </div>
+  <div class="journey-card__progress">
+    <span id="journey-progress">—</span>
+    <span class="journey-card__percent" id="journey-percent">—</span>
+  </div>
+</div>
 
-<p class="calculation-intro"><span id="hiking-countries">—</span></p>
-
-<p class="calculation-intro">
-  Current cumulated distance:
-  <span id="current-cumulated-distance">—</span> km
-</p>
-
-<progress id="map-progress" max="100" value="0">0%</progress>
+<div class="weekly-progress" aria-label="Weekly progress bar">
+  <div id="weekly-progress-bar" class="weekly-progress__bar"></div>
+  <div class="weekly-progress__labels">
+    <span>0 km</span>
+    <span id="weekly-progress-total">—</span>
+  </div>
+</div>
 
 <figure class="hiking-tracker-map">
   <div id="hiking-map" style="height: 500px; border: 1px solid #d7e3db; border-radius: 8px;"></div>

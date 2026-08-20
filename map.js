@@ -2,7 +2,12 @@
 // Loaded on the switzerland-hiking-tracker page.
 
 const mapContainer = document.querySelector("#hiking-map");
-const progressBar = document.querySelector("#map-progress");
+const journeyOrigin = document.querySelector("#journey-origin");
+const journeyDestination = document.querySelector("#journey-destination");
+const journeyProgress = document.querySelector("#journey-progress");
+const journeyPercent = document.querySelector("#journey-percent");
+const weeklyProgressBar = document.querySelector("#weekly-progress-bar");
+const weeklyProgressTotal = document.querySelector("#weekly-progress-total");
 
 let map = null;
 let routeCoordinates = [];
@@ -37,32 +42,54 @@ function subscribeToProgress(config) {
   firebase.firestore().collection("entries").onSnapshot((snapshot) => {
     const entries = snapshot.docs.map((doc) => doc.data());
     const totalKm = entries.reduce((sum, entry) => sum + (entry.walkingEquivalentKm || 0), 0);
-    renderProgress(totalKm, config);
-    if (map) renderWeeklyProgress(entries, config);
+    const weeklyProgress = computeWeeklyProgress(entries, config.startDate);
+    renderJourneyCard(totalKm, config);
+    renderWeeklyProgressBar(weeklyProgress, totalKm);
+    if (map) renderWeeklyProgress(weeklyProgress, config);
     updateLocationGallery(totalKm);
   });
 }
 
-function renderProgress(totalKm, config) {
+function renderJourneyCard(totalKm, config) {
   const percent = totalRouteKm ? Math.min(100, (totalKm / totalRouteKm) * 100).toFixed(1) : 0;
 
-  const statusEl = document.querySelector("#hiking-status");
-  if (statusEl) {
-    statusEl.textContent = `${formatKm(totalKm)} km walked out of ${formatKm(totalRouteKm)} km to ${config.destination.name} (${percent}%).`;
+  if (journeyOrigin) journeyOrigin.textContent = config.origin.name || "Start";
+  if (journeyDestination) journeyDestination.textContent = config.destination.name || "Destination";
+  if (journeyProgress) {
+    journeyProgress.textContent = `${formatKm(totalKm)} km / ${formatKm(totalRouteKm)} km`;
+  }
+  if (journeyPercent) journeyPercent.textContent = `${percent}%`;
+  if (weeklyProgressTotal) weeklyProgressTotal.textContent = `${formatKm(totalRouteKm)} km`;
+}
+
+function renderWeeklyProgressBar(weeklyProgress, totalKm) {
+  if (!weeklyProgressBar) return;
+
+  if (!weeklyProgress.length) {
+    const percent = totalRouteKm ? Math.min(100, (totalKm / totalRouteKm) * 100).toFixed(1) : 0;
+    weeklyProgressBar.innerHTML = `
+      <div class="weekly-progress__segment weekly-progress__segment--empty" style="width: ${percent}%;"></div>
+    `;
+    return;
   }
 
-  const countriesEl = document.querySelector("#hiking-countries");
-  if (countriesEl) {
-    countriesEl.textContent = `Current goal: reach ${config.destination.name}.`;
-  }
+  const weekKms = weeklyProgress.map((w) => w.weekKm);
+  const minKm = Math.min(...weekKms);
+  const maxKm = Math.max(...weekKms);
 
-  const currentDistanceEl = document.querySelector("#current-cumulated-distance");
-  if (currentDistanceEl) currentDistanceEl.textContent = formatKm(totalKm);
-
-  if (progressBar) {
-    progressBar.value = Math.min(100, percent);
-    progressBar.textContent = `${percent}%`;
-  }
+  weeklyProgressBar.innerHTML = weeklyProgress
+    .map((week, index) => {
+      const width = totalRouteKm ? (week.weekKm / totalRouteKm) * 100 : 0;
+      const color = getColorForWeeklyKm(week.weekKm, minKm, maxKm, null);
+      return `
+        <div
+          class="weekly-progress__segment"
+          style="width: ${width}%; background: ${color};"
+          title="Week ${week.weekIndex + 1}: ${formatKm(week.weekKm)} km"
+        ></div>
+      `;
+    })
+    .join("");
 }
 
 function getCompletedCoordinates(targetKm) {
@@ -413,12 +440,16 @@ function interpolateColor(color1, color2, ratio) {
   );
 }
 
-function getColorForWeeklyKm(weekKm, minKm, maxKm, config) {
-  const gradient = config.weeklyPaceGradient || {
+function defaultPaceGradient() {
+  return {
     slowColor: "#f44336",
     midColor: "#ffeb3b",
     fastColor: "#4caf50",
   };
+}
+
+function getColorForWeeklyKm(weekKm, minKm, maxKm, config) {
+  const gradient = config?.weeklyPaceGradient || defaultPaceGradient();
   if (maxKm <= minKm) return gradient.fastColor;
   const ratio = Math.max(0, Math.min(1, (weekKm - minKm) / (maxKm - minKm)));
 
@@ -486,12 +517,11 @@ function renderLegend(minKm, maxKm, config) {
   `;
 }
 
-function renderWeeklyProgress(entries, config) {
+function renderWeeklyProgress(weeklyProgress, config) {
   if (!map || !routeCoordinates.length) return;
 
   clearWeeklyLayers();
 
-  const weeklyProgress = computeWeeklyProgress(entries, config.startDate);
   if (!weeklyProgress.length) return;
 
   const weekKms = weeklyProgress.map((w) => w.weekKm);
