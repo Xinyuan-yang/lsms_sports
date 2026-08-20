@@ -123,22 +123,61 @@ function coordinateDistanceKm(coord1, coord2) {
   return R * c;
 }
 
+function parseAddressName(data) {
+  const addr = data.address || {};
+  return {
+    locality: addr.village || addr.town || addr.city || addr.municipality || addr.hamlet || null,
+    county: addr.county || addr.district || addr.region || null,
+    state: addr.state || addr.province || null,
+    country: addr.country || null,
+  };
+}
+
+function buildSearchQueries(address) {
+  const { locality, county, state, country } = address;
+  const queries = [];
+  if (locality && country) queries.push(`${locality} ${country}`);
+  if (county && country) queries.push(`${county} ${country}`);
+  if (state && country) queries.push(`${state} ${country}`);
+  if (country) queries.push(`${country} landscape`);
+  return queries;
+}
+
 async function fetchLocationName(lat, lng) {
   const url = `https://nominatim.openstreetmap.org/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
     lng
-  )}&format=json`;
+  )}&format=json&addressdetails=1`;
   const response = await fetch(url);
   if (!response.ok) throw new Error("Location lookup failed");
   const data = await response.json();
-  return data.display_name || null;
+  return {
+    display: data.display_name || null,
+    address: parseAddressName(data),
+  };
 }
 
-async function fetchWikimediaImages(lat, lng) {
+function normalizeWikimediaImages(data) {
+  const pages = data.query?.pages || {};
+  return Object.values(pages)
+    .map((page) => {
+      const info = page.imageinfo?.[0];
+      return {
+        pageId: page.pageid,
+        title: page.title,
+        url: info?.url,
+        thumbUrl: info?.thumburl,
+        description: info?.extmetadata?.ImageDescription?.value || page.title,
+      };
+    })
+    .filter((img) => img.url);
+}
+
+async function fetchWikimediaGeoImages(lat, lng) {
   const params = new URLSearchParams({
     action: "query",
     generator: "geosearch",
     ggsnamespace: "6",
-    ggsradius: "50000",
+    ggsradius: "10000",
     ggslimit: "12",
     ggscoord: `${lat}|${lng}`,
     prop: "imageinfo",
@@ -149,19 +188,25 @@ async function fetchWikimediaImages(lat, lng) {
   });
   const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`);
   if (!response.ok) throw new Error("Image search failed");
-  const data = await response.json();
-  const pages = data.query?.pages || {};
-  return Object.values(pages)
-    .map((page) => {
-      const info = page.imageinfo?.[0];
-      return {
-        title: page.title,
-        url: info?.url,
-        thumbUrl: info?.thumburl,
-        description: info?.extmetadata?.ImageDescription?.value || page.title,
-      };
-    })
-    .filter((img) => img.url);
+  return normalizeWikimediaImages(await response.json());
+}
+
+async function fetchWikimediaSearchImages(query) {
+  const params = new URLSearchParams({
+    action: "query",
+    generator: "search",
+    gsrnamespace: "6",
+    gsrlimit: "12",
+    gsrsearch: query,
+    prop: "imageinfo",
+    iiprop: "url|extmetadata",
+    iiurlwidth: "800",
+    format: "json",
+    origin: "*",
+  });
+  const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`);
+  if (!response.ok) throw new Error("Image search failed");
+  return normalizeWikimediaImages(await response.json());
 }
 
 function renderLocationGallery(images, locationName) {
@@ -210,21 +255,38 @@ async function updateLocationGallery(totalKm) {
   lastGalleryCoord = coord;
   lastGalleryFetchTime = now;
 
-  let locationName = null;
+  let locationData = null;
   try {
-    locationName = await fetchLocationName(coord[0], coord[1]);
+    locationData = await fetchLocationName(coord[0], coord[1]);
   } catch (error) {
     console.warn("Location name lookup failed:", error);
   }
 
   let images = [];
   try {
-    images = await fetchWikimediaImages(coord[0], coord[1]);
+    images = await fetchWikimediaGeoImages(coord[0], coord[1]);
   } catch (error) {
-    console.warn("Landscape image fetch failed:", error);
+    console.warn("Geosearch image fetch failed:", error);
   }
 
-  renderLocationGallery(images, locationName);
+  if (locationData?.address && images.length < 3) {
+    const queries = buildSearchQueries(locationData.address);
+    for (const query of queries) {
+      if (images.length >= 3) break;
+      try {
+        const searchImages = await fetchWikimediaSearchImages(query);
+        for (const img of searchImages) {
+          if (!images.some((existing) => existing.pageId === img.pageId || existing.title === img.title)) {
+            images.push(img);
+          }
+        }
+      } catch (error) {
+        console.warn(`Text image search failed for "${query}":`, error);
+      }
+    }
+  }
+
+  renderLocationGallery(images.slice(0, 3), locationData?.display || null);
 }
 
 function hexToRgb(hex) {
