@@ -300,7 +300,7 @@ aside#sidebar {
 /* Activity entry form */
 .entry-form {
   max-width: 480px;
-  margin: 1.5rem 0 2.5rem;
+  margin: 1.5rem auto 2.5rem;
   padding: 24px;
   background: #fff;
   border: 1px solid #dbe5df;
@@ -321,6 +321,7 @@ aside#sidebar {
 .form-row input,
 .form-row select {
   width: 100%;
+  box-sizing: border-box;
   padding: 10px 12px;
   border: 1px solid #c5d2cb;
   border-radius: 8px;
@@ -332,6 +333,12 @@ aside#sidebar {
 .form-row select:focus {
   outline: 2px solid #82d5a2;
   border-color: #82d5a2;
+}
+
+.form-row #person-new,
+.form-row #custom-sport,
+.form-row #custom-met {
+  margin-top: 8px;
 }
 
 .form-message {
@@ -350,6 +357,14 @@ aside#sidebar {
 
 .form-message--error {
   color: #c62828;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 6px;
+  color: #5d7165;
+  font-size: 0.9rem;
+  font-weight: 400;
 }
 
 .error {
@@ -402,4 +417,134 @@ aside#sidebar {
 
 .hiking-tracker-map #hiking-map {
   background: #e8f0e9;
+}
+
+/* Week-end markers on the hiking map */
+.week-marker {
+  background: transparent;
+  border: none;
+}
+
+.week-marker span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #fff;
+  background: #4caf50;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.map-legend {
+  max-width: 240px;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #dbe5df;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(20, 50, 34, 0.08);
+}
+
+.map-legend__label {
+  margin-bottom: 0.4rem;
+  color: #355547;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.map-legend__bar {
+  height: 10px;
+  margin-bottom: 0.4rem;
+  border-radius: 5px;
+}
+
+.map-legend__scale {
+  display: flex;
+  justify-content: space-between;
+  color: #5d7165;
+  font-size: 0.85rem;
+}
+
+/* Current location landscape gallery */
+.current-location {
+  margin: 2.5rem 0;
+  padding: 1.5rem;
+  background: #f7faf8;
+  border: 1px solid #dbe5df;
+  border-radius: 12px;
+}
+
+.current-location h2 {
+  margin-top: 0;
+  font-size: 2rem;
+  color: #123c2a;
+}
+
+.current-location__name {
+  margin-bottom: 1.25rem;
+  color: #355547;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.location-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.location-gallery__item {
+  margin: 0;
+}
+
+.location-gallery__item a {
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid #dbe5df;
+  background: #fff;
+}
+
+.location-gallery__item img {
+  display: block;
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.location-gallery__item a:hover img {
+  transform: scale(1.03);
+}
+
+.location-gallery__item figcaption {
+  padding: 0.75rem;
+  color: #5d7165;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Sport breakdown chart */
+.chart-container {
+  position: relative;
+  max-width: 560px;
+  height: 280px;
+  margin: 1rem auto 2.5rem;
+}
+
+#sport-chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 600px) {
+  .chart-container {
+    height: 240px;
+  }
 }

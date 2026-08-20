@@ -57,6 +57,9 @@ def fetch_ors_route(origin, destination, api_key):
         "instructions": False,
         "preference": "recommended",
         "radiuses": [-1, -1],
+        "options": {
+            "avoid_features": ["ferries"],
+        },
     }
     response = requests.post(ORS_BASE_URL, headers=headers, json=payload, timeout=120)
     if not response.ok:
@@ -149,10 +152,11 @@ def fetch_multi_segment_route(origin, destination, api_key):
     return {"type": "LineString", "coordinates": all_coordinates}
 
 
-def simplify_geometry(geometry, tolerance_degrees=0.005):
+def simplify_geometry(geometry, tolerance_degrees=0.001):
     """Simplify a GeoJSON LineString while preserving topology.
 
-    tolerance_degrees ≈ 0.005° corresponds to roughly 500 m near the equator.
+    tolerance_degrees ≈ 0.001° corresponds to roughly 100 m near the equator.
+    Lower values keep more detail (higher resolution) but produce larger files.
     """
     line = LineString(geometry["coordinates"])
     simplified = line.simplify(tolerance=tolerance_degrees, preserve_topology=True)

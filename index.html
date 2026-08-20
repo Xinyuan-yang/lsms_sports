@@ -25,11 +25,21 @@ title: LSMS Sports Tracker
     <p class="empty-state">Loading leaderboard…</p>
   </div>
 
+  <h2 id="sport-breakdown-heading">Sport breakdown</h2>
+  <div class="chart-container">
+    <canvas id="sport-chart" aria-label="Sport breakdown by equivalent km" role="img"></canvas>
+    <p id="sport-chart-empty" class="empty-state">Loading sport breakdown…</p>
+  </div>
+
   <h2 id="add-activity-heading">Log your activity</h2>
   <form id="entry-form" class="entry-form">
     <div class="form-row">
-      <label for="person">Name</label>
-      <input type="text" id="person" name="person" required placeholder="Your name">
+      <label for="person-select">Name</label>
+      <select id="person-select" required>
+        <option value="" disabled selected>Choose your name</option>
+      </select>
+      <input type="text" id="person-new" style="display: none; margin-top: 8px;" placeholder="Your name" aria-label="New person name">
+      <input type="hidden" id="person" name="person">
     </div>
 
     <div class="form-row">
@@ -37,11 +47,28 @@ title: LSMS Sports Tracker
       <select id="sport" name="sport" required>
         <option value="" disabled selected>Choose a sport</option>
       </select>
+      <input type="text" id="custom-sport" name="customSport" style="display: none; margin-top: 8px;" placeholder="Sport name">
+      <input type="number" id="custom-met" name="customMet" style="display: none; margin-top: 8px;" step="0.1" min="0.1" placeholder="MET value">
     </div>
 
     <div class="form-row">
       <label for="duration">Duration (minutes)</label>
-      <input type="number" id="duration" name="duration" min="1" required placeholder="60">
+      <input type="number" id="duration" name="duration" min="1" placeholder="60">
+      <small class="field-hint">Enter duration, or fill distance below for cycling / e-biking / running / jogging / hiking.</small>
+    </div>
+
+    <div class="form-row" id="distance-row" style="display: none;">
+      <label for="distance">Distance (km)</label>
+      <input type="number" id="distance" name="distance" min="0.01" step="0.01" placeholder="e.g. 25">
+    </div>
+
+    <div class="form-row" id="pace-row" style="display: none;">
+      <label for="pace">Pace</label>
+      <select id="pace" name="pace">
+        <option value="slow">Slow</option>
+        <option value="medium" selected>Medium</option>
+        <option value="fast">Fast</option>
+      </select>
     </div>
 
     <div class="form-row">
@@ -61,4 +88,8 @@ title: LSMS Sports Tracker
   <p>For details of the calculation <a href="{{ '/calculation-details/' | relative_url }}">click here</a>.</p>
 </section>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+  window.serviceWorkerUrl = "{{ '/sw.js' | relative_url }}";
+</script>
 <script src="{{ '/script.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>

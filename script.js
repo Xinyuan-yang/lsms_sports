@@ -17,6 +17,15 @@ const hikingCountries = document.querySelector("#hiking-countries");
 const currentCumulatedDistance = document.querySelector("#current-cumulated-distance");
 const totalDistanceLeader = document.querySelector("#total-distance-leader");
 const totalDistanceLeaderDistance = document.querySelector("#total-distance-leader-distance");
+const distanceRow = document.querySelector("#distance-row");
+const paceRow = document.querySelector("#pace-row");
+const personSelect = document.querySelector("#person-select");
+const personNewInput = document.querySelector("#person-new");
+const personHiddenInput = document.querySelector("#person");
+const customSportInput = document.querySelector("#custom-sport");
+const customMetInput = document.querySelector("#custom-met");
+const sportChartCanvas = document.querySelector("#sport-chart");
+const sportChartEmpty = document.querySelector("#sport-chart-empty");
 
 function formatKm(value) {
   return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
@@ -57,6 +66,17 @@ function computeWalkingEquivalentKm(durationMinutes, metValue) {
   const hours = durationMinutes / 60;
   const equivalentWalkingHours = (metValue * hours) / globalConfig.hikingMet;
   return equivalentWalkingHours * globalConfig.hikingSpeedKmh;
+}
+
+function sportSupportsDistance(sport) {
+  return globalConfig?.sportPaces ? Object.prototype.hasOwnProperty.call(globalConfig.sportPaces, sport) : false;
+}
+
+function computeDurationFromDistance(distanceKm, sport, pace) {
+  const speeds = globalConfig.sportPaces[sport];
+  const speedKmh = speeds?.[pace] || speeds?.medium || 0;
+  if (!speedKmh) return 0;
+  return (distanceKm / speedKmh) * 60;
 }
 
 function aggregateByPerson(entries) {
@@ -114,6 +134,113 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function aggregateBySport(entries) {
+  const totals = {};
+  entries.forEach((entry) => {
+    const sport = entry.sport?.trim();
+    if (!sport) return;
+    totals[sport] = (totals[sport] || 0) + (entry.walkingEquivalentKm || 0);
+  });
+  return Object.entries(totals)
+    .map(([sport, km]) => ({ sport, km }))
+    .sort((a, b) => b.km - a.km);
+}
+
+const SPORT_CHART_MIN_PERCENT = 3;
+
+function interpolateBlueColor(percent, minPercent, maxPercent) {
+  let ratio = 0;
+  if (maxPercent > minPercent) {
+    ratio = (percent - minPercent) / (maxPercent - minPercent);
+  }
+  ratio = Math.max(0, Math.min(1, ratio));
+  const dark = { r: 0, g: 26, b: 77 }; // #001a4d
+  const light = { r: 227, g: 242, b: 253 }; // #e3f2fd
+  const r = Math.round(light.r + (dark.r - light.r) * ratio);
+  const g = Math.round(light.g + (dark.g - light.g) * ratio);
+  const b = Math.round(light.b + (dark.b - light.b) * ratio);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function renderSportChart(entries) {
+  if (!sportChartCanvas) return;
+
+  const data = aggregateBySport(entries);
+  if (!data.length) {
+    if (sportChartEmpty) sportChartEmpty.style.display = "block";
+    sportChartCanvas.style.display = "none";
+    return;
+  }
+
+  if (sportChartEmpty) sportChartEmpty.style.display = "none";
+  sportChartCanvas.style.display = "block";
+
+  const total = data.reduce((sum, d) => sum + d.km, 0) || 1;
+  const withPercent = data.map((d) => ({ ...d, percent: (d.km / total) * 100 }));
+
+  const main = withPercent.filter((d) => d.percent >= SPORT_CHART_MIN_PERCENT);
+  const otherKm = withPercent
+    .filter((d) => d.percent < SPORT_CHART_MIN_PERCENT)
+    .reduce((sum, d) => sum + d.km, 0);
+
+  const chartData = main.map((d) => ({ label: d.sport, value: d.km, percent: d.percent }));
+  if (otherKm > 0) {
+    chartData.push({ label: "Other", value: otherKm, percent: (otherKm / total) * 100 });
+  }
+
+  const labels = chartData.map((d) => d.label);
+  const values = chartData.map((d) => d.value);
+  const minPercent = Math.min(...chartData.map((d) => d.percent));
+  const maxPercent = Math.max(...chartData.map((d) => d.percent));
+  const colors = chartData.map((d) =>
+    d.label === "Other" ? "#9e9e9e" : interpolateBlueColor(d.percent, minPercent, maxPercent)
+  );
+
+  if (window.sportChartInstance) {
+    window.sportChartInstance.data.labels = labels;
+    window.sportChartInstance.data.datasets[0].data = values;
+    window.sportChartInstance.data.datasets[0].backgroundColor = colors;
+    window.sportChartInstance.update();
+    return;
+  }
+
+  window.sportChartInstance = new Chart(sportChartCanvas, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderWidth: 2,
+        borderColor: "#fff",
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "right",
+          labels: {
+            color: "#17212b",
+            font: { size: 12 },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const value = context.raw;
+              const datasetTotal = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percent = datasetTotal ? ((value / datasetTotal) * 100).toFixed(1) : 0;
+              return `${context.label}: ${formatKm(value)} km (${percent}%)`;
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 function renderMapStatus(totalKm) {
   if (totalKmDisplay) {
     totalKmDisplay.textContent = formatKm(totalKm);
@@ -143,7 +270,9 @@ function subscribeToEntries() {
     const entries = snapshot.docs.map((doc) => doc.data());
     const leaderboard = computeLeaderboard(entries);
     renderLeaderboard(leaderboard);
+    renderSportChart(entries);
     renderMapStatus(leaderboard.totalKm);
+    updatePeopleSelect(entries);
 
     // Update hiking tracker page leader values too.
     if (totalDistanceLeader && leaderboard.all.length) {
@@ -156,6 +285,69 @@ function subscribeToEntries() {
       leaderboardSection.innerHTML = "<p class=\"error\">Unable to load leaderboard.</p>";
     }
   });
+}
+
+function updateDistanceFields(sport) {
+  if (!distanceRow || !paceRow) return;
+  const supportsDistance = sport && sport !== "__custom__" && sportSupportsDistance(sport);
+  distanceRow.style.display = supportsDistance ? "block" : "none";
+  paceRow.style.display = supportsDistance ? "block" : "none";
+}
+
+function updateCustomSportFields() {
+  if (!customSportInput || !customMetInput) return;
+  const sportSelect = entryForm?.querySelector("#sport");
+  const isCustom = sportSelect?.value === "__custom__";
+  customSportInput.style.display = isCustom ? "block" : "none";
+  customSportInput.required = isCustom;
+  customMetInput.style.display = isCustom ? "block" : "none";
+  customMetInput.required = isCustom;
+  if (!isCustom) {
+    customSportInput.value = "";
+    customMetInput.value = "";
+  }
+}
+
+function updatePeopleSelect(entries) {
+  if (!personSelect) return;
+
+  const names = [...new Set(entries.map((entry) => entry.person?.trim()).filter(Boolean))].sort();
+  const previousValue = personSelect.value;
+
+  personSelect.innerHTML = '<option value="" disabled selected>Choose your name</option>';
+  names.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    personSelect.append(option);
+  });
+
+  const newOption = document.createElement("option");
+  newOption.value = "__new__";
+  newOption.textContent = "+ Add new person";
+  personSelect.append(newOption);
+
+  if (previousValue && (names.includes(previousValue) || previousValue === "__new__")) {
+    personSelect.value = previousValue;
+  }
+
+  // Keep the hidden input in sync if an existing name is selected.
+  if (personHiddenInput && personSelect.value !== "__new__") {
+    personHiddenInput.value = personSelect.value;
+  }
+}
+
+function updatePersonInputVisibility() {
+  if (!personSelect || !personNewInput || !personHiddenInput) return;
+  const isNew = personSelect.value === "__new__";
+  personNewInput.style.display = isNew ? "block" : "none";
+  personNewInput.required = isNew;
+  if (!isNew) {
+    personNewInput.value = "";
+    personHiddenInput.value = personSelect.value;
+  } else {
+    personHiddenInput.value = personNewInput.value.trim();
+  }
 }
 
 function renderForm() {
@@ -172,6 +364,33 @@ function renderForm() {
     option.textContent = `${sport} (${met} METs)`;
     sportSelect.append(option);
   });
+
+  const customOption = document.createElement("option");
+  customOption.value = "__custom__";
+  customOption.textContent = "+ Custom sport";
+  sportSelect.append(customOption);
+
+  // Show/hide distance, pace, and custom sport fields based on the selection.
+  sportSelect.addEventListener("change", () => {
+    updateDistanceFields(sportSelect.value);
+    updateCustomSportFields();
+  });
+  updateDistanceFields(sportSelect.value);
+  updateCustomSportFields();
+
+  // Show/hide the new-person text input based on the name selection.
+  if (personSelect) {
+    personSelect.addEventListener("change", updatePersonInputVisibility);
+    updatePersonInputVisibility();
+  }
+
+  if (personNewInput) {
+    personNewInput.addEventListener("input", () => {
+      if (personHiddenInput && personSelect.value === "__new__") {
+        personHiddenInput.value = personNewInput.value.trim();
+      }
+    });
+  }
 
   // Default date to today.
   const dateInput = entryForm.querySelector("#date");
@@ -196,45 +415,90 @@ async function handleFormSubmit(event) {
   }
 
   const formData = new FormData(entryForm);
-  const person = formData.get("person")?.trim();
-  const sport = formData.get("sport");
+  const rawPerson = formData.get("person")?.trim();
+  let sport = formData.get("sport");
   const duration = parseFloat(formData.get("duration"));
+  const distance = parseFloat(formData.get("distance"));
+  const pace = formData.get("pace") || "medium";
   const date = formData.get("date");
   const pin = formData.get("pin")?.trim();
 
-  if (!person || !sport || !Number.isFinite(duration) || duration <= 0 || !date || !pin) {
+  if (!rawPerson || !sport || !date || !pin) {
     setFormMessage("Please fill in all fields correctly.", "error");
     return;
   }
 
-  const metValue = globalConfig.metValues[sport];
-  if (!metValue) {
-    setFormMessage("Unknown sport selected.", "error");
+  let metValue;
+  if (sport === "__custom__") {
+    sport = formData.get("customSport")?.trim();
+    metValue = parseFloat(formData.get("customMet"));
+    if (!sport || !Number.isFinite(metValue) || metValue <= 0) {
+      setFormMessage("Please provide a custom sport name and a positive MET value.", "error");
+      return;
+    }
+  } else {
+    metValue = globalConfig.metValues[sport];
+    if (!metValue) {
+      setFormMessage("Unknown sport selected.", "error");
+      return;
+    }
+  }
+
+  const supportsDistance = sportSupportsDistance(sport);
+  const hasDuration = Number.isFinite(duration) && duration > 0;
+  const hasDistance = supportsDistance && Number.isFinite(distance) && distance > 0;
+
+  if (!hasDuration && !hasDistance) {
+    setFormMessage("Please enter either a duration or a distance.", "error");
     return;
   }
 
-  const walkingKm = computeWalkingEquivalentKm(duration, metValue);
+  let durationMinutes;
+  let distanceKm = null;
+  let paceValue = null;
+  let walkingKm;
+
+  if (hasDistance) {
+    distanceKm = Math.round(distance * 100) / 100;
+    paceValue = pace;
+    durationMinutes = Math.round(computeDurationFromDistance(distance, sport, pace) * 100) / 100;
+    walkingKm = computeWalkingEquivalentKm(durationMinutes, metValue);
+  } else {
+    durationMinutes = duration;
+    walkingKm = computeWalkingEquivalentKm(duration, metValue);
+  }
 
   const submitButton = entryForm.querySelector('button[type="submit"]');
   if (submitButton) submitButton.disabled = true;
   setFormMessage("Submitting...", "info");
 
   try {
-    await db.collection("entries").add({
-      person,
+    const entryData = {
+      person: rawPerson,
       sport,
-      durationMinutes: duration,
+      durationMinutes,
       metValue,
       walkingEquivalentKm: Math.round(walkingKm * 100) / 100,
       date,
       submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
       pin,
-    });
+    };
+
+    if (distanceKm !== null) {
+      entryData.distanceKm = distanceKm;
+      entryData.pace = paceValue;
+    }
+
+    await db.collection("entries").add(entryData);
 
     entryForm.reset();
-    // Restore default date.
+    // Restore default date and hide conditional fields until selections are made.
     const dateInput = entryForm.querySelector("#date");
     if (dateInput) dateInput.valueAsDate = new Date();
+    const sportSelect = entryForm.querySelector("#sport");
+    if (sportSelect) updateDistanceFields(sportSelect.value);
+    updateCustomSportFields();
+    updatePersonInputVisibility();
     setFormMessage(`Added ${formatKm(walkingKm)} km. Great job!`, "success");
   } catch (error) {
     console.error("Submit failed:", error);
@@ -265,4 +529,15 @@ async function init() {
   }
 }
 
+function registerServiceWorker() {
+  if ("serviceWorker" in navigator) {
+    const swUrl = window.serviceWorkerUrl || "sw.js";
+    navigator.serviceWorker
+      .register(swUrl)
+      .then((registration) => console.log("[PWA] Service worker registered:", registration.scope))
+      .catch((error) => console.error("[PWA] Service worker registration failed:", error));
+  }
+}
+
 init();
+registerServiceWorker();
