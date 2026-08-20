@@ -146,18 +146,17 @@ function aggregateBySport(entries) {
     .sort((a, b) => b.km - a.km);
 }
 
-const SPORT_COLOR_PALETTE = [
-  "#123c2a", // dark green
-  "#2e7d32", // green
-  "#82d5a2", // light green
-  "#ff9800", // orange
-  "#f44336", // red
-  "#355547", // muted green
-  "#5d7165", // grey-green
-  "#c62828", // dark red
-  "#ffb74d", // light orange
-  "#4caf50", // bright green
-];
+const SPORT_CHART_MIN_PERCENT = 3;
+
+function interpolateBlueColor(percent) {
+  const ratio = Math.max(0, Math.min(1, percent / 100));
+  const dark = { r: 13, g: 71, b: 161 }; // #0d47a1
+  const light = { r: 227, g: 242, b: 253 }; // #e3f2fd
+  const r = Math.round(light.r + (dark.r - light.r) * ratio);
+  const g = Math.round(light.g + (dark.g - light.g) * ratio);
+  const b = Math.round(light.b + (dark.b - light.b) * ratio);
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 function renderSportChart(entries) {
   if (!sportChartCanvas) return;
@@ -172,9 +171,24 @@ function renderSportChart(entries) {
   if (sportChartEmpty) sportChartEmpty.style.display = "none";
   sportChartCanvas.style.display = "block";
 
-  const labels = data.map((d) => d.sport);
-  const values = data.map((d) => d.km);
-  const colors = data.map((_, i) => SPORT_COLOR_PALETTE[i % SPORT_COLOR_PALETTE.length]);
+  const total = data.reduce((sum, d) => sum + d.km, 0) || 1;
+  const withPercent = data.map((d) => ({ ...d, percent: (d.km / total) * 100 }));
+
+  const main = withPercent.filter((d) => d.percent >= SPORT_CHART_MIN_PERCENT);
+  const otherKm = withPercent
+    .filter((d) => d.percent < SPORT_CHART_MIN_PERCENT)
+    .reduce((sum, d) => sum + d.km, 0);
+
+  const chartData = main.map((d) => ({ label: d.sport, value: d.km, percent: d.percent }));
+  if (otherKm > 0) {
+    chartData.push({ label: "Other", value: otherKm, percent: (otherKm / total) * 100 });
+  }
+
+  const labels = chartData.map((d) => d.label);
+  const values = chartData.map((d) => d.value);
+  const colors = chartData.map((d) =>
+    d.label === "Other" ? "#9e9e9e" : interpolateBlueColor(d.percent)
+  );
 
   if (window.sportChartInstance) {
     window.sportChartInstance.data.labels = labels;
@@ -210,8 +224,8 @@ function renderSportChart(entries) {
           callbacks: {
             label: (context) => {
               const value = context.raw;
-              const total = context.dataset.data.reduce((a, b) => a + b, 0);
-              const percent = total ? ((value / total) * 100).toFixed(1) : 0;
+              const datasetTotal = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percent = datasetTotal ? ((value / datasetTotal) * 100).toFixed(1) : 0;
               return `${context.label}: ${formatKm(value)} km (${percent}%)`;
             },
           },
