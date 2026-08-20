@@ -148,8 +148,12 @@ function aggregateBySport(entries) {
 
 const SPORT_CHART_MIN_PERCENT = 3;
 
-function interpolateBlueColor(percent) {
-  const ratio = Math.max(0, Math.min(1, percent / 100));
+function interpolateBlueColor(percent, minPercent, maxPercent) {
+  let ratio = 0;
+  if (maxPercent > minPercent) {
+    ratio = (percent - minPercent) / (maxPercent - minPercent);
+  }
+  ratio = Math.max(0, Math.min(1, ratio));
   const dark = { r: 0, g: 26, b: 77 }; // #001a4d
   const light = { r: 227, g: 242, b: 253 }; // #e3f2fd
   const r = Math.round(light.r + (dark.r - light.r) * ratio);
@@ -186,8 +190,10 @@ function renderSportChart(entries) {
 
   const labels = chartData.map((d) => d.label);
   const values = chartData.map((d) => d.value);
+  const minPercent = Math.min(...chartData.map((d) => d.percent));
+  const maxPercent = Math.max(...chartData.map((d) => d.percent));
   const colors = chartData.map((d) =>
-    d.label === "Other" ? "#9e9e9e" : interpolateBlueColor(d.percent)
+    d.label === "Other" ? "#9e9e9e" : interpolateBlueColor(d.percent, minPercent, maxPercent)
   );
 
   if (window.sportChartInstance) {
