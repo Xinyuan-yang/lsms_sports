@@ -3,3 +3,9 @@ _site
 .jekyll-cache
 .jekyll-metadata
 vendor
+
+# Python virtual environment and local secrets
+.venv/
+.env
+service-account.json
+*.json.key
