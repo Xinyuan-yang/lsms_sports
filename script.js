@@ -150,7 +150,7 @@ const SPORT_CHART_MIN_PERCENT = 3;
 
 function interpolateBlueColor(percent) {
   const ratio = Math.max(0, Math.min(1, percent / 100));
-  const dark = { r: 13, g: 71, b: 161 }; // #0d47a1
+  const dark = { r: 0, g: 26, b: 77 }; // #001a4d
   const light = { r: 227, g: 242, b: 253 }; // #e3f2fd
   const r = Math.round(light.r + (dark.r - light.r) * ratio);
   const g = Math.round(light.g + (dark.g - light.g) * ratio);
