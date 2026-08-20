@@ -470,6 +470,65 @@ aside#sidebar {
   font-size: 0.85rem;
 }
 
+/* Current location landscape gallery */
+.current-location {
+  margin: 2.5rem 0;
+  padding: 1.5rem;
+  background: #f7faf8;
+  border: 1px solid #dbe5df;
+  border-radius: 12px;
+}
+
+.current-location h2 {
+  margin-top: 0;
+  font-size: 2rem;
+  color: #123c2a;
+}
+
+.current-location__name {
+  margin-bottom: 1.25rem;
+  color: #355547;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.location-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.location-gallery__item {
+  margin: 0;
+}
+
+.location-gallery__item a {
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid #dbe5df;
+  background: #fff;
+}
+
+.location-gallery__item img {
+  display: block;
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.location-gallery__item a:hover img {
+  transform: scale(1.03);
+}
+
+.location-gallery__item figcaption {
+  padding: 0.75rem;
+  color: #5d7165;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 /* Sport breakdown chart */
 .chart-container {
   position: relative;

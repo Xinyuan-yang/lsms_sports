@@ -9,6 +9,11 @@ let routeCoordinates = [];
 let routeDistances = [];
 let totalRouteKm = 0;
 
+let lastGalleryCoord = null;
+let lastGalleryFetchTime = 0;
+const GALLERY_MIN_MOVE_KM = 5;
+const GALLERY_MIN_INTERVAL_MS = 5000;
+
 function formatKm(value) {
   return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
@@ -34,6 +39,7 @@ function subscribeToProgress(config) {
     const totalKm = entries.reduce((sum, entry) => sum + (entry.walkingEquivalentKm || 0), 0);
     renderProgress(totalKm, config);
     if (map) renderWeeklyProgress(entries, config);
+    updateLocationGallery(totalKm);
   });
 }
 
@@ -86,6 +92,139 @@ function getCoordinateAtKm(targetKm) {
     if (routeDistances[i] >= targetKm) return routeCoordinates[i];
   }
   return routeCoordinates[routeCoordinates.length - 1];
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function stripHtml(html) {
+  if (!html) return "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+}
+
+function coordinateDistanceKm(coord1, coord2) {
+  const R = 6371;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(coord2[0] - coord1[0]);
+  const dLon = toRad(coord2[1] - coord1[1]);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(coord1[0])) * Math.cos(toRad(coord2[0])) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+async function fetchLocationName(lat, lng) {
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
+    lng
+  )}&format=json`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Location lookup failed");
+  const data = await response.json();
+  return data.display_name || null;
+}
+
+async function fetchWikimediaImages(lat, lng) {
+  const params = new URLSearchParams({
+    action: "query",
+    generator: "geosearch",
+    ggsnamespace: "6",
+    ggsradius: "50000",
+    ggslimit: "12",
+    ggscoord: `${lat}|${lng}`,
+    prop: "imageinfo",
+    iiprop: "url|extmetadata",
+    iiurlwidth: "800",
+    format: "json",
+    origin: "*",
+  });
+  const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`);
+  if (!response.ok) throw new Error("Image search failed");
+  const data = await response.json();
+  const pages = data.query?.pages || {};
+  return Object.values(pages)
+    .map((page) => {
+      const info = page.imageinfo?.[0];
+      return {
+        title: page.title,
+        url: info?.url,
+        thumbUrl: info?.thumburl,
+        description: info?.extmetadata?.ImageDescription?.value || page.title,
+      };
+    })
+    .filter((img) => img.url);
+}
+
+function renderLocationGallery(images, locationName) {
+  const nameEl = document.querySelector("#current-location-name");
+  const galleryEl = document.querySelector("#location-gallery");
+
+  if (nameEl) {
+    nameEl.textContent = locationName ? `Currently near: ${stripHtml(locationName)}` : "Current location";
+  }
+
+  if (!galleryEl) return;
+
+  if (!images.length) {
+    galleryEl.innerHTML = '<p class="empty-state">No landscape photos found for this area.</p>';
+    return;
+  }
+
+  galleryEl.innerHTML = images
+    .slice(0, 3)
+    .map((img) => {
+      const alt = stripHtml(img.description || img.title);
+      const caption = stripHtml(img.description || "");
+      return `
+        <figure class="location-gallery__item">
+          <a href="${img.url}" target="_blank" rel="noopener">
+            <img src="${img.thumbUrl || img.url}" alt="${escapeHtml(alt)}" loading="lazy">
+          </a>
+          ${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ""}
+        </figure>
+      `;
+    })
+    .join("");
+}
+
+async function updateLocationGallery(totalKm) {
+  const coord = getCoordinateAtKm(totalKm);
+  if (!coord) return;
+
+  const now = Date.now();
+  const moved =
+    !lastGalleryCoord || coordinateDistanceKm(lastGalleryCoord, coord) >= GALLERY_MIN_MOVE_KM;
+  const enoughTime = now - lastGalleryFetchTime >= GALLERY_MIN_INTERVAL_MS;
+
+  if (!moved && !enoughTime) return;
+
+  lastGalleryCoord = coord;
+  lastGalleryFetchTime = now;
+
+  let locationName = null;
+  try {
+    locationName = await fetchLocationName(coord[0], coord[1]);
+  } catch (error) {
+    console.warn("Location name lookup failed:", error);
+  }
+
+  let images = [];
+  try {
+    images = await fetchWikimediaImages(coord[0], coord[1]);
+  } catch (error) {
+    console.warn("Landscape image fetch failed:", error);
+  }
+
+  renderLocationGallery(images, locationName);
 }
 
 function hexToRgb(hex) {

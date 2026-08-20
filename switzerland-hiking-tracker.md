@@ -20,6 +20,14 @@ permalink: /switzerland-hiking-tracker/
   <div id="map-legend" class="map-legend"></div>
 </figure>
 
+<section id="current-location" class="current-location" aria-labelledby="current-location-heading">
+  <h2 id="current-location-heading">Where are we currently?</h2>
+  <p id="current-location-name" class="current-location__name">Loading location…</p>
+  <div id="location-gallery" class="location-gallery">
+    <p class="empty-state">Loading landscape photos…</p>
+  </div>
+</section>
+
 <p><a href="{{ '/' | relative_url }}">Return to the sports tracker</a></p>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
