@@ -156,6 +156,11 @@ async function fetchLocationName(lat, lng) {
   };
 }
 
+function extractCategories(info) {
+  const raw = info?.extmetadata?.Categories?.value || "";
+  return raw.split("|").map((c) => c.trim()).filter(Boolean);
+}
+
 function normalizeWikimediaImages(data) {
   const pages = data.query?.pages || {};
   return Object.values(pages)
@@ -167,9 +172,104 @@ function normalizeWikimediaImages(data) {
         url: info?.url,
         thumbUrl: info?.thumburl,
         description: info?.extmetadata?.ImageDescription?.value || page.title,
+        categories: extractCategories(info),
       };
     })
     .filter((img) => img.url);
+}
+
+function getLocationTerms(address) {
+  const terms = new Set();
+  if (!address) return terms;
+  [address.locality, address.county, address.state, address.country].forEach((term) => {
+    if (term) terms.add(term.toLowerCase());
+  });
+  return terms;
+}
+
+function isGenericCategory(category) {
+  const generic = [
+    "self-published work",
+    "own work",
+    "files with coordinates missing",
+    "taken with",
+    "images from",
+    "files from",
+    "iss expedition",
+    "iss photographs",
+    "pd nasa",
+    "uploaded via",
+    "uploaded with",
+    "mediagrant",
+    "fotíme česko",
+    "photos taken with",
+    "all media supported by",
+    "cc by",
+    "cc-by",
+    "cc0",
+    "public domain",
+    "pd-old",
+    "pd-art",
+    "license migration",
+    "gfdl",
+    "creative commons",
+    "files by user",
+    "with known ids",
+    "artworks without wikidata item",
+    "artworks with wikidata item",
+    "sold at",
+    "license",
+  ];
+  const lower = category.toLowerCase();
+  return generic.some((g) => lower.includes(g));
+}
+
+function isLocationCategory(category, locationTerms) {
+  if (!locationTerms.size) return false;
+  const lower = category.toLowerCase();
+  for (const term of locationTerms) {
+    if (lower === term) return true;
+  }
+  return false;
+}
+
+function getSpecificCategories(image, locationTerms) {
+  return image.categories.filter(
+    (cat) => !isGenericCategory(cat) && !isLocationCategory(cat, locationTerms)
+  );
+}
+
+function normalizeTitleKey(title) {
+  return title
+    .replace(/^File:/, "")
+    .replace(/\.[^.]+$/, "")
+    .replace(/\s*\(\d+\)\s*$/, "")
+    .replace(/\s*-\s*\d+\s*$/, "")
+    .trim()
+    .toLowerCase();
+}
+
+function selectDiverseImages(images, maxCount, address) {
+  const locationTerms = getLocationTerms(address);
+  const selected = [];
+  const usedTitleKeys = new Set();
+  const usedCategories = new Set();
+
+  for (const img of images) {
+    if (selected.length >= maxCount) break;
+
+    const titleKey = normalizeTitleKey(img.title);
+    if (usedTitleKeys.has(titleKey)) continue;
+
+    const specificCats = getSpecificCategories(img, locationTerms);
+    if (specificCats.some((cat) => usedCategories.has(cat))) continue;
+
+    selected.push(img);
+    usedTitleKeys.add(titleKey);
+    specificCats.forEach((cat) => usedCategories.add(cat));
+  }
+
+  return selected;
 }
 
 async function fetchWikimediaGeoImages(lat, lng) {
@@ -286,7 +386,8 @@ async function updateLocationGallery(totalKm) {
     }
   }
 
-  renderLocationGallery(images.slice(0, 3), locationData?.display || null);
+  const diverseImages = selectDiverseImages(images, 3, locationData?.address);
+  renderLocationGallery(diverseImages, locationData?.display || null);
 }
 
 function hexToRgb(hex) {
