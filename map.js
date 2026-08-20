@@ -592,7 +592,7 @@ async function initMap() {
     L.marker(origin).addTo(map).bindPopup(config.origin.name || "Start");
     L.marker(destination).addTo(map).bindPopup(config.destination.name || "Destination");
 
-    renderProgress(0, config);
+    renderJourneyCard(0, config);
     subscribeToProgress(config);
   } catch (error) {
     console.error("Map initialization failed:", error);
