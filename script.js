@@ -4,6 +4,7 @@ const auth = firebase.auth();
 
 let globalConfig = null;
 let entriesUnsubscribe = null;
+let leaderboardView = "week";
 
 // DOM element references
 const trackerTable = document.querySelector("#tracker-table");
@@ -103,10 +104,47 @@ function computeLeaderboard(entries) {
   return { top3, othersKm, totalKm, all: ranked };
 }
 
-function renderLeaderboard({ top3, othersKm, totalKm }) {
+function getCurrentWeekEntries(entries) {
+  const today = new Date();
+  const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const day = startOfWeek.getDay();
+  startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1));
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  return entries.filter((entry) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(entry.date || "")) return false;
+    const [year, month, date] = entry.date.split("-").map(Number);
+    const entryDate = new Date(year, month - 1, date);
+    return entryDate >= startOfWeek && entryDate < new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 7);
+  });
+}
+
+function renderLeaderboard(weeklyLeaderboard, totalLeaderboard) {
   if (!leaderboardSection) return;
 
-  let html = '<div class="podium">';
+  const leaderboard = leaderboardView === "week" ? weeklyLeaderboard : totalLeaderboard;
+  const { top3, othersKm, totalKm } = leaderboard;
+  const periodLabel = leaderboardView === "week" ? "This week's leaders" : "All-time leaders";
+
+  let html = `
+    <div class="leaderboard-toggle" role="group" aria-label="Leaderboard period">
+      <button type="button" class="leaderboard-toggle__button${leaderboardView === "week" ? " is-active" : ""}" data-leaderboard-view="week" aria-pressed="${leaderboardView === "week"}">This week</button>
+      <button type="button" class="leaderboard-toggle__button${leaderboardView === "total" ? " is-active" : ""}" data-leaderboard-view="total" aria-pressed="${leaderboardView === "total"}">All time</button>
+    </div>
+    <p class="leaderboard-period">${periodLabel}</p>
+  `;
+
+  if (!top3.length) {
+    const emptyMessage = leaderboardView === "week"
+      ? "No activities logged this week yet."
+      : "No activities logged yet.";
+    html += `<p class="empty-state leaderboard-empty">${emptyMessage}</p>`;
+    leaderboardSection.innerHTML = html;
+    bindLeaderboardToggle(weeklyLeaderboard, totalLeaderboard);
+    return;
+  }
+
+  html += '<div class="podium">';
   const medals = ["🥇", "🥈", "🥉"];
   top3.forEach((entry, index) => {
     html += `
@@ -126,6 +164,18 @@ function renderLeaderboard({ top3, othersKm, totalKm }) {
   html += `<p class="group-total">Group total: <strong>${formatKm(totalKm)} km</strong></p>`;
 
   leaderboardSection.innerHTML = html;
+  bindLeaderboardToggle(weeklyLeaderboard, totalLeaderboard);
+}
+
+function bindLeaderboardToggle(weeklyLeaderboard, totalLeaderboard) {
+  leaderboardSection.querySelectorAll("[data-leaderboard-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextView = button.dataset.leaderboardView;
+      if (nextView === leaderboardView) return;
+      leaderboardView = nextView;
+      renderLeaderboard(weeklyLeaderboard, totalLeaderboard);
+    });
+  });
 }
 
 function escapeHtml(text) {
@@ -148,19 +198,17 @@ function aggregateBySport(entries) {
 
 const SPORT_CHART_MIN_PERCENT = 3;
 
-function interpolateBlueColor(percent, minPercent, maxPercent) {
-  let ratio = 0;
-  if (maxPercent > minPercent) {
-    ratio = (percent - minPercent) / (maxPercent - minPercent);
-  }
-  ratio = Math.max(0, Math.min(1, ratio));
-  const dark = { r: 0, g: 26, b: 77 }; // #001a4d
-  const light = { r: 227, g: 242, b: 253 }; // #e3f2fd
-  const r = Math.round(light.r + (dark.r - light.r) * ratio);
-  const g = Math.round(light.g + (dark.g - light.g) * ratio);
-  const b = Math.round(light.b + (dark.b - light.b) * ratio);
-  return `rgb(${r}, ${g}, ${b})`;
-}
+const SPORT_CHART_COLORS = [
+  "#1F5C4A", // forest green
+  "#287C78", // deep teal
+  "#B7604E", // muted terracotta
+  "#C18C3E", // antique gold
+  "#76506F", // dusty plum
+  "#6F8A64", // sage
+  "#3E6977", // slate teal
+  "#A66F3D", // burnished ochre
+];
+const SPORT_CHART_OTHER_COLOR = "#8A8178"; // warm stone
 
 function renderSportChart(entries) {
   if (!sportChartCanvas) return;
@@ -190,11 +238,13 @@ function renderSportChart(entries) {
 
   const labels = chartData.map((d) => d.label);
   const values = chartData.map((d) => d.value);
-  const minPercent = Math.min(...chartData.map((d) => d.percent));
-  const maxPercent = Math.max(...chartData.map((d) => d.percent));
-  const colors = chartData.map((d) =>
-    d.label === "Other" ? "#9e9e9e" : interpolateBlueColor(d.percent, minPercent, maxPercent)
-  );
+  let colorIndex = 0;
+  const colors = chartData.map((d) => {
+    if (d.label === "Other") return SPORT_CHART_OTHER_COLOR;
+    const color = SPORT_CHART_COLORS[colorIndex % SPORT_CHART_COLORS.length];
+    colorIndex += 1;
+    return color;
+  });
 
   if (window.sportChartInstance) {
     window.sportChartInstance.data.labels = labels;
@@ -212,7 +262,7 @@ function renderSportChart(entries) {
         data: values,
         backgroundColor: colors,
         borderWidth: 2,
-        borderColor: "#fff",
+        borderColor: "#fbfaf7",
       }],
     },
     options: {
@@ -269,7 +319,8 @@ function subscribeToEntries() {
   entriesUnsubscribe = db.collection("entries").onSnapshot((snapshot) => {
     const entries = snapshot.docs.map((doc) => doc.data());
     const leaderboard = computeLeaderboard(entries);
-    renderLeaderboard(leaderboard);
+    const weeklyLeaderboard = computeLeaderboard(getCurrentWeekEntries(entries));
+    renderLeaderboard(weeklyLeaderboard, leaderboard);
     renderSportChart(entries);
     renderMapStatus(leaderboard.totalKm);
     updatePeopleSelect(entries);
