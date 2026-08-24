@@ -9,6 +9,8 @@ const journeyPercent = document.querySelector("#journey-percent");
 const weeklyProgressBar = document.querySelector("#weekly-progress-bar");
 const weeklyProgressTotal = document.querySelector("#weekly-progress-total");
 
+const CURRENT_WEEK_COLOR = "#00897b";
+
 let map = null;
 let routeCoordinates = [];
 let routeDistances = [];
@@ -73,14 +75,17 @@ function renderWeeklyProgressBar(weeklyProgress, totalKm) {
     return;
   }
 
-  const weekKms = weeklyProgress.map((w) => w.weekKm);
-  const minKm = Math.min(...weekKms);
-  const maxKm = Math.max(...weekKms);
+  const currentWeekIndex = weeklyProgress.length - 1;
+  const completedWeeks = weeklyProgress.slice(0, currentWeekIndex);
+  const completedWeekKms = completedWeeks.map((w) => w.weekKm);
+  const minKm = completedWeekKms.length ? Math.min(...completedWeekKms) : 0;
+  const maxKm = completedWeekKms.length ? Math.max(...completedWeekKms) : 0;
 
   weeklyProgressBar.innerHTML = weeklyProgress
     .map((week, index) => {
       const width = totalRouteKm ? (week.weekKm / totalRouteKm) * 100 : 0;
-      const color = getColorForWeeklyKm(week.weekKm, minKm, maxKm, null);
+      const isCurrent = index === currentWeekIndex;
+      const color = isCurrent ? CURRENT_WEEK_COLOR : getColorForWeeklyKm(week.weekKm, minKm, maxKm, null);
       return `
         <div
           class="weekly-progress__segment"
@@ -540,9 +545,11 @@ function renderWeeklyProgress(weeklyProgress, config) {
 
   if (!weeklyProgress.length) return;
 
-  const weekKms = weeklyProgress.map((w) => w.weekKm);
-  const minKm = Math.min(...weekKms);
-  const maxKm = Math.max(...weekKms);
+  const currentWeekIndex = weeklyProgress.length - 1;
+  const completedWeeks = weeklyProgress.slice(0, currentWeekIndex);
+  const completedWeekKms = completedWeeks.map((w) => w.weekKm);
+  const minKm = completedWeekKms.length ? Math.min(...completedWeekKms) : 0;
+  const maxKm = completedWeekKms.length ? Math.max(...completedWeekKms) : 0;
 
   renderLegend(minKm, maxKm, config);
 
@@ -550,7 +557,8 @@ function renderWeeklyProgress(weeklyProgress, config) {
     const startKm = index === 0 ? 0 : weeklyProgress[index - 1].cumulativeKm;
     const endKm = week.cumulativeKm;
     const segmentCoords = getCoordinatesBetween(startKm, endKm);
-    const color = getColorForWeeklyKm(week.weekKm, minKm, maxKm, config);
+    const isCurrent = index === currentWeekIndex;
+    const color = isCurrent ? CURRENT_WEEK_COLOR : getColorForWeeklyKm(week.weekKm, minKm, maxKm, config);
 
     if (segmentCoords.length >= 2) {
       const lineLayer = L.polyline(segmentCoords, {
