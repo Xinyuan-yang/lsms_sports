@@ -104,18 +104,17 @@ function computeLeaderboard(entries) {
   return { top3, othersKm, totalKm, all: ranked };
 }
 
-function getCurrentWeekEntries(entries) {
+function getPastSevenDaysEntries(entries) {
   const today = new Date();
-  const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const day = startOfWeek.getDay();
-  startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1));
-  startOfWeek.setHours(0, 0, 0, 0);
+  const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  startDate.setDate(startDate.getDate() - 6);
+  const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 
   return entries.filter((entry) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(entry.date || "")) return false;
     const [year, month, date] = entry.date.split("-").map(Number);
     const entryDate = new Date(year, month - 1, date);
-    return entryDate >= startOfWeek && entryDate < new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 7);
+    return entryDate >= startDate && entryDate < endDate;
   });
 }
 
@@ -124,11 +123,11 @@ function renderLeaderboard(weeklyLeaderboard, totalLeaderboard) {
 
   const leaderboard = leaderboardView === "week" ? weeklyLeaderboard : totalLeaderboard;
   const { top3, othersKm, totalKm } = leaderboard;
-  const periodLabel = leaderboardView === "week" ? "This week's leaders" : "All-time leaders";
+  const periodLabel = leaderboardView === "week" ? "Past week's leaders" : "All-time leaders";
 
   let html = `
     <div class="leaderboard-toggle" role="group" aria-label="Leaderboard period">
-      <button type="button" class="leaderboard-toggle__button${leaderboardView === "week" ? " is-active" : ""}" data-leaderboard-view="week" aria-pressed="${leaderboardView === "week"}">This week</button>
+      <button type="button" class="leaderboard-toggle__button${leaderboardView === "week" ? " is-active" : ""}" data-leaderboard-view="week" aria-pressed="${leaderboardView === "week"}">Past week</button>
       <button type="button" class="leaderboard-toggle__button${leaderboardView === "total" ? " is-active" : ""}" data-leaderboard-view="total" aria-pressed="${leaderboardView === "total"}">All time</button>
     </div>
     <p class="leaderboard-period">${periodLabel}</p>
@@ -136,7 +135,7 @@ function renderLeaderboard(weeklyLeaderboard, totalLeaderboard) {
 
   if (!top3.length) {
     const emptyMessage = leaderboardView === "week"
-      ? "No activities logged this week yet."
+      ? "No activities logged in the past seven days yet."
       : "No activities logged yet.";
     html += `<p class="empty-state leaderboard-empty">${emptyMessage}</p>`;
     leaderboardSection.innerHTML = html;
@@ -319,7 +318,7 @@ function subscribeToEntries() {
   entriesUnsubscribe = db.collection("entries").onSnapshot((snapshot) => {
     const entries = snapshot.docs.map((doc) => doc.data());
     const leaderboard = computeLeaderboard(entries);
-    const weeklyLeaderboard = computeLeaderboard(getCurrentWeekEntries(entries));
+    const weeklyLeaderboard = computeLeaderboard(getPastSevenDaysEntries(entries));
     renderLeaderboard(weeklyLeaderboard, leaderboard);
     renderSportChart(entries);
     renderMapStatus(leaderboard.totalKm);
