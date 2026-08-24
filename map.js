@@ -9,7 +9,7 @@ const journeyPercent = document.querySelector("#journey-percent");
 const weeklyProgressBar = document.querySelector("#weekly-progress-bar");
 const weeklyProgressTotal = document.querySelector("#weekly-progress-total");
 
-const CURRENT_WEEK_COLOR = "#00897b";
+const CURRENT_WEEK_COLOR = "#ffe6e6";
 
 let map = null;
 let routeCoordinates = [];
@@ -447,9 +447,9 @@ function interpolateColor(color1, color2, ratio) {
 
 function defaultPaceGradient() {
   return {
-    slowColor: "#f44336",
-    midColor: "#ffeb3b",
-    fastColor: "#4caf50",
+    slowColor: "#ffffcc",
+    midColor: "#78c679",
+    fastColor: "#238443",
   };
 }
 
