@@ -447,7 +447,7 @@ function interpolateColor(color1, color2, ratio) {
 
 function defaultPaceGradient() {
   return {
-    slowColor: "#ffffcc",
+    slowColor: "#C5FF91",
     midColor: "#78c679",
     fastColor: "#238443",
   };
