@@ -98,8 +98,8 @@ DEFAULT_CONFIG = {
     # The color for each week is interpolated between slowColor (minimum weekly
     # km), midColor (middle), and fastColor (maximum weekly km).
     "weeklyPaceGradient": {
-        "slowColor": "#C5FF91",
-        "midColor": "#78c679",
+        "slowColor": "#78C679",
+        "midColor": "#4EA55E",
         "fastColor": "#238443",
     },
     # Hiking reference: 5.5 METs at 4 km/h.
