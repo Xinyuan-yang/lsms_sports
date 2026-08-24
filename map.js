@@ -459,15 +459,31 @@ function getColorForWeeklyKm(weekKm, minKm, maxKm, config) {
   return interpolateColor(gradient.midColor, gradient.fastColor, (ratio - 0.5) * 2);
 }
 
+function getMondayOfWeek(dateStr) {
+  // Treat the date string as a local calendar date so timezone does not shift the day.
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday
+  const offset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  date.setDate(date.getDate() + offset);
+  return date;
+}
+
 function computeWeeklyProgress(entries, startDateStr) {
-  const start = new Date(startDateStr);
+  const startMonday = getMondayOfWeek(startDateStr);
+  const startYear = startMonday.getFullYear();
+  const startMonth = startMonday.getMonth();
+  const startDay = startMonday.getDate();
   const weekMap = {};
 
   entries.forEach((entry) => {
     if (!entry.date) return;
-    const entryDate = new Date(entry.date);
+    const [year, month, day] = entry.date.split("-").map(Number);
+    const entryDate = new Date(year, month - 1, day);
     if (Number.isNaN(entryDate.getTime())) return;
-    const daysDiff = Math.floor((entryDate - start) / (1000 * 60 * 60 * 24));
+
+    const daysDiff =
+      Math.floor((entryDate - startMonday) / (1000 * 60 * 60 * 24));
     const weekIndex = Math.floor(daysDiff / 7);
     if (weekIndex < 0) return;
     weekMap[weekIndex] = (weekMap[weekIndex] || 0) + (entry.walkingEquivalentKm || 0);
@@ -573,9 +589,10 @@ async function initMap() {
 
     map = L.map(mapContainer).fitBounds(routeCoordinates, { padding: [40, 40] });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 18,
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 20,
     }).addTo(map);
 
     // Full planned route in grey.
