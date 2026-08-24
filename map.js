@@ -9,7 +9,7 @@ const journeyPercent = document.querySelector("#journey-percent");
 const weeklyProgressBar = document.querySelector("#weekly-progress-bar");
 const weeklyProgressTotal = document.querySelector("#weekly-progress-total");
 
-const CURRENT_WEEK_COLOR = "#ffe6e6";
+const CURRENT_WEEK_COLOR = "#ff8080";
 
 let map = null;
 let routeCoordinates = [];
