@@ -523,17 +523,17 @@ function renderLegend(minKm, maxKm, config) {
   const container = document.querySelector("#map-legend");
   if (!container) return;
 
-  const gradient = config.weeklyPaceGradient || {
-    slowColor: "#f44336",
-    midColor: "#ffeb3b",
-    fastColor: "#4caf50",
-  };
+  const gradient = config.weeklyPaceGradient || defaultPaceGradient();
   container.innerHTML = `
     <div class="map-legend__label">Weekly km</div>
     <div class="map-legend__bar" style="background: linear-gradient(to right, ${gradient.slowColor}, ${gradient.midColor}, ${gradient.fastColor});"></div>
     <div class="map-legend__scale">
       <span>${formatKm(minKm)} km</span>
       <span>${formatKm(maxKm)} km</span>
+    </div>
+    <div class="map-legend__item">
+      <span class="map-legend__swatch" style="background: ${CURRENT_WEEK_COLOR};"></span>
+      <span>Current week</span>
     </div>
   `;
 }

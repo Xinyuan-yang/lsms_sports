@@ -584,6 +584,22 @@ aside#sidebar {
   font-size: 0.85rem;
 }
 
+.map-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.6rem;
+  color: #355547;
+  font-size: 0.9rem;
+}
+
+.map-legend__swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
 /* Current location landscape gallery */
 .current-location {
   margin: 2.5rem 0;
