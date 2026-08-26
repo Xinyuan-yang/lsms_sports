@@ -302,6 +302,22 @@ function renderMapStatus(totalKm) {
   if (totalKmDisplay) {
     totalKmDisplay.textContent = formatKm(totalKm);
   }
+
+  // Reusable journey card (used on homepage and hiking tracker page).
+  const journeyOrigin = document.querySelector("#journey-origin");
+  const journeyDestination = document.querySelector("#journey-destination");
+  const journeyProgress = document.querySelector("#journey-progress");
+  const journeyPercent = document.querySelector("#journey-percent");
+
+  if (journeyProgress && globalConfig?.totalRouteKm) {
+    const percent = Math.min(100, (totalKm / globalConfig.totalRouteKm) * 100).toFixed(1);
+    if (journeyOrigin) journeyOrigin.textContent = globalConfig.origin.name || "Start";
+    if (journeyDestination) journeyDestination.textContent = globalConfig.destination.name || "Destination";
+    journeyProgress.textContent = `${formatKm(totalKm)} km / ${formatKm(globalConfig.totalRouteKm)} km`;
+    if (journeyPercent) journeyPercent.textContent = `${percent}%`;
+  }
+
+  // Fallback legacy message for pages that still use it.
   if (weeklyMessage) {
     if (globalConfig?.totalRouteKm) {
       const percent = Math.min(100, (totalKm / globalConfig.totalRouteKm) * 100).toFixed(1);
@@ -310,6 +326,7 @@ function renderMapStatus(totalKm) {
       weeklyMessage.textContent = `The lab has covered ${formatKm(totalKm)} km so far.`;
     }
   }
+
   if (hikingStatus) {
     hikingStatus.textContent = `Current progress: ${formatKm(totalKm)} km walked.`;
   }

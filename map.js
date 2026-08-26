@@ -9,6 +9,8 @@ const journeyPercent = document.querySelector("#journey-percent");
 const weeklyProgressBar = document.querySelector("#weekly-progress-bar");
 const weeklyProgressTotal = document.querySelector("#weekly-progress-total");
 
+const CURRENT_WEEK_COLOR = "#ff8080";
+
 let map = null;
 let routeCoordinates = [];
 let routeDistances = [];
@@ -73,14 +75,17 @@ function renderWeeklyProgressBar(weeklyProgress, totalKm) {
     return;
   }
 
-  const weekKms = weeklyProgress.map((w) => w.weekKm);
-  const minKm = Math.min(...weekKms);
-  const maxKm = Math.max(...weekKms);
+  const currentWeekIndex = weeklyProgress.length - 1;
+  const completedWeeks = weeklyProgress.slice(0, currentWeekIndex);
+  const completedWeekKms = completedWeeks.map((w) => w.weekKm);
+  const minKm = completedWeekKms.length ? Math.min(...completedWeekKms) : 0;
+  const maxKm = completedWeekKms.length ? Math.max(...completedWeekKms) : 0;
 
   weeklyProgressBar.innerHTML = weeklyProgress
     .map((week, index) => {
       const width = totalRouteKm ? (week.weekKm / totalRouteKm) * 100 : 0;
-      const color = getColorForWeeklyKm(week.weekKm, minKm, maxKm, null);
+      const isCurrent = index === currentWeekIndex;
+      const color = isCurrent ? CURRENT_WEEK_COLOR : getColorForWeeklyKm(week.weekKm, minKm, maxKm, null);
       return `
         <div
           class="weekly-progress__segment"
@@ -442,9 +447,9 @@ function interpolateColor(color1, color2, ratio) {
 
 function defaultPaceGradient() {
   return {
-    slowColor: "#f44336",
-    midColor: "#ffeb3b",
-    fastColor: "#4caf50",
+    slowColor: "#78C679",
+    midColor: "#4EA55E",
+    fastColor: "#238443",
   };
 }
 
@@ -459,15 +464,31 @@ function getColorForWeeklyKm(weekKm, minKm, maxKm, config) {
   return interpolateColor(gradient.midColor, gradient.fastColor, (ratio - 0.5) * 2);
 }
 
+function getMondayOfWeek(dateStr) {
+  // Treat the date string as a local calendar date so timezone does not shift the day.
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday
+  const offset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  date.setDate(date.getDate() + offset);
+  return date;
+}
+
 function computeWeeklyProgress(entries, startDateStr) {
-  const start = new Date(startDateStr);
+  const startMonday = getMondayOfWeek(startDateStr);
+  const startYear = startMonday.getFullYear();
+  const startMonth = startMonday.getMonth();
+  const startDay = startMonday.getDate();
   const weekMap = {};
 
   entries.forEach((entry) => {
     if (!entry.date) return;
-    const entryDate = new Date(entry.date);
+    const [year, month, day] = entry.date.split("-").map(Number);
+    const entryDate = new Date(year, month - 1, day);
     if (Number.isNaN(entryDate.getTime())) return;
-    const daysDiff = Math.floor((entryDate - start) / (1000 * 60 * 60 * 24));
+
+    const daysDiff =
+      Math.floor((entryDate - startMonday) / (1000 * 60 * 60 * 24));
     const weekIndex = Math.floor(daysDiff / 7);
     if (weekIndex < 0) return;
     weekMap[weekIndex] = (weekMap[weekIndex] || 0) + (entry.walkingEquivalentKm || 0);
@@ -502,17 +523,17 @@ function renderLegend(minKm, maxKm, config) {
   const container = document.querySelector("#map-legend");
   if (!container) return;
 
-  const gradient = config.weeklyPaceGradient || {
-    slowColor: "#f44336",
-    midColor: "#ffeb3b",
-    fastColor: "#4caf50",
-  };
+  const gradient = config.weeklyPaceGradient || defaultPaceGradient();
   container.innerHTML = `
     <div class="map-legend__label">Weekly km</div>
     <div class="map-legend__bar" style="background: linear-gradient(to right, ${gradient.slowColor}, ${gradient.midColor}, ${gradient.fastColor});"></div>
     <div class="map-legend__scale">
       <span>${formatKm(minKm)} km</span>
       <span>${formatKm(maxKm)} km</span>
+    </div>
+    <div class="map-legend__item">
+      <span class="map-legend__swatch" style="background: ${CURRENT_WEEK_COLOR};"></span>
+      <span>Current week</span>
     </div>
   `;
 }
@@ -524,9 +545,11 @@ function renderWeeklyProgress(weeklyProgress, config) {
 
   if (!weeklyProgress.length) return;
 
-  const weekKms = weeklyProgress.map((w) => w.weekKm);
-  const minKm = Math.min(...weekKms);
-  const maxKm = Math.max(...weekKms);
+  const currentWeekIndex = weeklyProgress.length - 1;
+  const completedWeeks = weeklyProgress.slice(0, currentWeekIndex);
+  const completedWeekKms = completedWeeks.map((w) => w.weekKm);
+  const minKm = completedWeekKms.length ? Math.min(...completedWeekKms) : 0;
+  const maxKm = completedWeekKms.length ? Math.max(...completedWeekKms) : 0;
 
   renderLegend(minKm, maxKm, config);
 
@@ -534,7 +557,8 @@ function renderWeeklyProgress(weeklyProgress, config) {
     const startKm = index === 0 ? 0 : weeklyProgress[index - 1].cumulativeKm;
     const endKm = week.cumulativeKm;
     const segmentCoords = getCoordinatesBetween(startKm, endKm);
-    const color = getColorForWeeklyKm(week.weekKm, minKm, maxKm, config);
+    const isCurrent = index === currentWeekIndex;
+    const color = isCurrent ? CURRENT_WEEK_COLOR : getColorForWeeklyKm(week.weekKm, minKm, maxKm, config);
 
     if (segmentCoords.length >= 2) {
       const lineLayer = L.polyline(segmentCoords, {
@@ -573,9 +597,10 @@ async function initMap() {
 
     map = L.map(mapContainer).fitBounds(routeCoordinates, { padding: [40, 40] });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 18,
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 20,
     }).addTo(map);
 
     // Full planned route in grey.

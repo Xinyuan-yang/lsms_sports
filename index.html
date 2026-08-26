@@ -14,7 +14,18 @@ title: LSMS Sports Tracker
 <section aria-labelledby="tracker">
   <h1 id="tracker">Tracker</h1>
 
-  <p class="calculation-intro"><span id="weekly-message">Loading progress…</span></p>
+  <div class="journey-card">
+    <div class="journey-card__route">
+      <span class="journey-card__origin" id="journey-origin">—</span>
+      <span class="journey-card__arrow" aria-hidden="true">→</span>
+      <span class="journey-card__destination" id="journey-destination">—</span>
+    </div>
+    <div class="journey-card__progress">
+      <span id="journey-progress">—</span>
+      <span class="journey-card__percent" id="journey-percent">—</span>
+    </div>
+  </div>
+
   <p class="calculation-intro">
     You can view our journey on
     <a href="{{ '/switzerland-hiking-tracker/' | relative_url }}">the interactive hiking map</a>.
