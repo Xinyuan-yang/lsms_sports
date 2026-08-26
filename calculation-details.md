@@ -48,6 +48,20 @@ permalink: /calculation-details/
   </table>
 </div>
 
+<div class="met-table-wrapper">
+  <table class="met-table effort-met-table">
+    <caption>MET values by effort for Running, Swimming, and Bicycling</caption>
+    <thead>
+      <tr><th scope="col">Sport</th><th scope="col">Easy</th><th scope="col">Moderate</th><th scope="col">Intense</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Running</td><td>8.3</td><td>9.8</td><td>11.0</td></tr>
+      <tr><td>Swimming</td><td>6.0</td><td>8.0</td><td>10.0</td></tr>
+      <tr><td>Bicycling</td><td>5.8</td><td>7.5</td><td>10.0</td></tr>
+    </tbody>
+  </table>
+</div>
+
 <p class="calculation-source">For more detailed information, see <a href="https://pacompendium.com/">The Compendium of Physical Activities</a>.</p>
 
 
@@ -73,10 +87,10 @@ permalink: /calculation-details/
 <p class="calculation-intro">If you enter both duration and distance, distance takes precedence. The reference speeds are:</p>
 
 <div class="met-table-wrapper">
-  <table class="met-table">
-    <caption>Reference speeds by sport and pace</caption>
+  <table class="met-table effort-met-table">
+    <caption>Reference speeds by sport and effort</caption>
     <thead>
-      <tr><th scope="col">Sport</th><th scope="col">Slow</th><th scope="col">Medium</th><th scope="col">Fast</th></tr>
+      <tr><th scope="col">Sport</th><th scope="col">Easy</th><th scope="col">Moderate</th><th scope="col">Intense</th></tr>
     </thead>
     <tbody>
       <tr><td>Bicycling</td><td>15 km/h</td><td>20 km/h</td><td>25 km/h</td></tr>
@@ -88,5 +102,4 @@ permalink: /calculation-details/
   </table>
 </div>
 
-<p class="calculation-intro">Alongside the collective effort to travel across the world, your cumulative distance is shown as the furthest city you would reach.</p>
-
+<!-- <p class="calculation-intro">Alongside the collective effort to travel across the world, your cumulative distance is shown as the furthest city you would reach.</p> -->
