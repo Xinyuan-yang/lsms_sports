@@ -6,6 +6,13 @@ let globalConfig = null;
 let entriesUnsubscribe = null;
 let leaderboardView = "week";
 
+const effortMetValues = {
+  Running: { easy: 8.3, moderate: 9.8, intense: 11.0 },
+  Swimming: { easy: 6.0, moderate: 8.0, intense: 10.0 },
+  Bicycling: { easy: 5.8, moderate: 7.5, intense: 10.0 },
+};
+const effortToPace = { easy: "slow", moderate: "medium", intense: "fast" };
+
 // DOM element references
 const trackerTable = document.querySelector("#tracker-table");
 const leaderboardSection = document.querySelector("#leaderboard-section");
@@ -25,6 +32,7 @@ const personNewInput = document.querySelector("#person-new");
 const personHiddenInput = document.querySelector("#person");
 const customSportInput = document.querySelector("#custom-sport");
 const customMetInput = document.querySelector("#custom-met");
+const paceLabel = document.querySelector("#pace-label");
 const sportChartCanvas = document.querySelector("#sport-chart");
 const sportChartEmpty = document.querySelector("#sport-chart-empty");
 
@@ -75,7 +83,7 @@ function sportSupportsDistance(sport) {
 
 function computeDurationFromDistance(distanceKm, sport, pace) {
   const speeds = globalConfig.sportPaces[sport];
-  const speedKmh = speeds?.[pace] || speeds?.medium || 0;
+  const speedKmh = speeds?.[effortToPace[pace] || pace] || speeds?.medium || 0;
   if (!speedKmh) return 0;
   return (distanceKm / speedKmh) * 60;
 }
@@ -340,8 +348,20 @@ function subscribeToEntries() {
 function updateDistanceFields(sport) {
   if (!distanceRow || !paceRow) return;
   const supportsDistance = sport && sport !== "__custom__" && sportSupportsDistance(sport);
+  const usesEffort = ["Running", "Swimming", "Bicycling"].includes(sport);
+  const paceSelect = entryForm?.querySelector("#pace");
   distanceRow.style.display = supportsDistance ? "block" : "none";
-  paceRow.style.display = supportsDistance ? "block" : "none";
+  paceRow.style.display = (supportsDistance || usesEffort) ? "block" : "none";
+
+  if (paceLabel) paceLabel.textContent = usesEffort ? "Effort" : "Pace";
+  if (paceSelect) {
+    paceSelect.options[0].value = usesEffort ? "easy" : "slow";
+    paceSelect.options[1].value = usesEffort ? "moderate" : "medium";
+    paceSelect.options[2].value = usesEffort ? "intense" : "fast";
+    paceSelect.options[0].textContent = usesEffort ? "Easy" : "Slow";
+    paceSelect.options[1].textContent = usesEffort ? "Moderate" : "Medium";
+    paceSelect.options[2].textContent = usesEffort ? "Intense" : "Fast";
+  }
 }
 
 function updateCustomSportFields() {
@@ -411,7 +431,7 @@ function renderForm() {
     const option = document.createElement("option");
     option.value = sport;
     option.dataset.met = met;
-    option.textContent = `${sport} (${met} METs)`;
+    option.textContent = sport;
     sportSelect.append(option);
   });
 
@@ -487,7 +507,7 @@ async function handleFormSubmit(event) {
       return;
     }
   } else {
-    metValue = globalConfig.metValues[sport];
+    metValue = globalConfig.effortMetValues?.[sport]?.[pace] || effortMetValues[sport]?.[pace] || globalConfig.metValues[sport];
     if (!metValue) {
       setFormMessage("Unknown sport selected.", "error");
       return;
@@ -536,7 +556,10 @@ async function handleFormSubmit(event) {
 
     if (distanceKm !== null) {
       entryData.distanceKm = distanceKm;
-      entryData.pace = paceValue;
+      entryData.pace = effortToPace[paceValue] || paceValue;
+    }
+    if (effortMetValues[sport]) {
+      entryData.effort = pace;
     }
 
     await db.collection("entries").add(entryData);

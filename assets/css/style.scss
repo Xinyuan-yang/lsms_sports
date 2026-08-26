@@ -128,6 +128,27 @@ h2 {
   font-weight: 400;
 }
 
+.effort-met-table {
+  table-layout: fixed;
+}
+
+.effort-met-table th,
+.effort-met-table td {
+  width: 25%;
+  text-align: center;
+}
+
+.effort-met-table th:first-child,
+.effort-met-table td:first-child {
+  text-align: left;
+}
+
+.effort-met-table th:last-child,
+.effort-met-table td:last-child {
+  width: 25%;
+  text-align: center;
+}
+
 .calculation-source {
   color: #5d7165;
 }
