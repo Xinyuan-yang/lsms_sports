@@ -597,10 +597,9 @@ async function initMap() {
 
     map = L.map(mapContainer).fitBounds(routeCoordinates, { padding: [40, 40] });
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: "abcd",
-      maxZoom: 20,
+    L.maplibreGL({
+      style: "https://tiles.openfreemap.org/styles/bright",
+      attribution: '<a href="https://openfreemap.org">OpenFreeMap</a> <a href="https://www.openmaptiles.org/">© OpenMapTiles</a> | <a href="https://www.openstreetmap.org/copyright">Data from OpenStreetMap</a>',
     }).addTo(map);
 
     // Full planned route in grey.
