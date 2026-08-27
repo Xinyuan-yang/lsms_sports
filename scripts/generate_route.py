@@ -152,10 +152,10 @@ def fetch_multi_segment_route(origin, destination, api_key):
     return {"type": "LineString", "coordinates": all_coordinates}
 
 
-def simplify_geometry(geometry, tolerance_degrees=0.001):
+def simplify_geometry(geometry, tolerance_degrees=0.0004):
     """Simplify a GeoJSON LineString while preserving topology.
 
-    tolerance_degrees ≈ 0.001° corresponds to roughly 100 m near the equator.
+    tolerance_degrees ≈ 0.0004° corresponds to roughly 45 m near the equator.
     Lower values keep more detail (higher resolution) but produce larger files.
     """
     line = LineString(geometry["coordinates"])

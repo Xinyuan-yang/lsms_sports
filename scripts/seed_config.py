@@ -25,9 +25,9 @@ DEFAULT_ORIGIN = {
 }
 
 DEFAULT_DESTINATION = {
-    "name": "IIT Madras, India",
-    "lat": 12.9915,
-    "lng": 80.2336,
+    "name": "New Delhi, India",
+    "lat": 28.6139,
+    "lng": 77.2090,
 }
 
 
