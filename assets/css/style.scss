@@ -506,6 +506,50 @@ aside#sidebar {
   font-size: 0.95rem;
 }
 
+.journey-card__countries {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2ebe5;
+}
+
+.journey-country {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #5d7165;
+}
+
+.journey-country img {
+  width: 32px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.journey-country__name {
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.journey-country.is-current {
+  color: #123c2a;
+  font-weight: 700;
+}
+
+.journey-country.is-current img {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
 /* Weekly segmented progress bar */
 .weekly-progress {
   margin: 1rem 0 2rem;

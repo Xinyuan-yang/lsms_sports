@@ -14,6 +14,7 @@ permalink: /switzerland-hiking-tracker/
     <span id="journey-progress">—</span>
     <span class="journey-card__percent" id="journey-percent">—</span>
   </div>
+  <div class="journey-card__countries" id="journey-countries" aria-label="Countries crossed"></div>
 </div>
 
 <div class="weekly-progress" aria-label="Weekly progress bar">

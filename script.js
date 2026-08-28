@@ -4,6 +4,7 @@ const auth = firebase.auth();
 
 let globalConfig = null;
 let entriesUnsubscribe = null;
+let routeData = null;
 let leaderboardView = "week";
 
 const effortMetValues = {
@@ -69,6 +70,18 @@ async function loadConfig() {
   }
   globalConfig = snapshot.data();
   return globalConfig;
+}
+
+async function loadRouteData() {
+  try {
+    const routeUrl = window.routeUrl || "{{ '/assets/data/route.json' | relative_url }}?v={{ site.time | date: '%s' }}";
+    const response = await fetch(routeUrl);
+    if (!response.ok) throw new Error("Route data unavailable");
+    routeData = await response.json();
+  } catch (error) {
+    console.warn("[Tracker] Could not load route data:", error);
+    routeData = null;
+  }
 }
 
 function computeWalkingEquivalentKm(durationMinutes, metValue) {
@@ -298,6 +311,38 @@ function renderSportChart(entries) {
   });
 }
 
+function getCurrentCountry(totalKm) {
+  if (!routeData?.properties?.crossedCountries?.length) return null;
+  const countries = routeData.properties.crossedCountries;
+  for (let i = countries.length - 1; i >= 0; i -= 1) {
+    if (totalKm >= countries[i].distanceKm) {
+      return { index: i, country: countries[i] };
+    }
+  }
+  return { index: 0, country: countries[0] };
+}
+
+function renderJourneyCountries(totalKm) {
+  const container = document.querySelector("#journey-countries");
+  if (!container || !routeData?.properties?.crossedCountries?.length) return;
+
+  const current = getCurrentCountry(totalKm);
+  if (!current) return;
+
+  const countries = routeData.properties.crossedCountries.slice(0, current.index + 1);
+  container.innerHTML = countries
+    .map((c, index) => {
+      const isCurrent = index === current.index;
+      return `
+        <div class="journey-country ${isCurrent ? 'is-current' : ''}">
+          <img src="https://flagcdn.com/w40/${c.countryCode.toLowerCase()}.png" alt="${escapeHtml(c.name)} flag" loading="lazy" width="32" height="24">
+          <span class="journey-country__name">${escapeHtml(c.name)}</span>
+        </div>
+      `;
+    })
+    .join('');
+}
+
 function renderMapStatus(totalKm) {
   if (totalKmDisplay) {
     totalKmDisplay.textContent = formatKm(totalKm);
@@ -316,6 +361,8 @@ function renderMapStatus(totalKm) {
     journeyProgress.textContent = `${formatKm(totalKm)} km / ${formatKm(globalConfig.totalRouteKm)} km`;
     if (journeyPercent) journeyPercent.textContent = `${percent}%`;
   }
+
+  renderJourneyCountries(totalKm);
 
   // Fallback legacy message for pages that still use it.
   if (weeklyMessage) {
@@ -604,6 +651,8 @@ async function init() {
     console.log("[Tracker] Loading config...");
     await loadConfig();
     console.log("[Tracker] Config loaded");
+    await loadRouteData();
+    console.log("[Tracker] Route data loaded");
     renderForm();
     console.log("[Tracker] Subscribing to entries...");
     subscribeToEntries();

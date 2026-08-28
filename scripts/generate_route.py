@@ -13,6 +13,7 @@ import json
 import math
 import os
 import sys
+import time
 from pathlib import Path
 
 import firebase_admin
@@ -152,10 +153,10 @@ def fetch_multi_segment_route(origin, destination, api_key):
     return {"type": "LineString", "coordinates": all_coordinates}
 
 
-def simplify_geometry(geometry, tolerance_degrees=0.0004):
+def simplify_geometry(geometry, tolerance_degrees=0.0005):
     """Simplify a GeoJSON LineString while preserving topology.
 
-    tolerance_degrees ≈ 0.0004° corresponds to roughly 45 m near the equator.
+    tolerance_degrees ≈ 0.0005° corresponds to roughly 50 m near the equator.
     Lower values keep more detail (higher resolution) but produce larger files.
     """
     line = LineString(geometry["coordinates"])
@@ -191,6 +192,90 @@ def annotate_route(geometry):
     }
 
 
+def fetch_country_code(lat, lng):
+    """Reverse-geocode a point and return its ISO country code and name.
+
+    Respects Nominatim's usage policy by waiting between requests.
+    """
+    url = (
+        f"https://nominatim.openstreetmap.org/reverse"
+        f"?lat={lat}&lon={lng}&format=json&addressdetails=1&zoom=3"
+    )
+    headers = {"User-Agent": "lsms-sports-tracker/1.0"}
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        if not response.ok:
+            return None, None
+        data = response.json()
+        address = data.get("address", {})
+        country_code = address.get("country_code")
+        country = address.get("country")
+        return (country_code.upper() if country_code else None), country
+    except Exception as error:
+        print(f"    Country lookup failed for {lat},{lng}: {error}")
+        return None, None
+    finally:
+        # Nominatim usage policy: max ~1 request per second.
+        time.sleep(1.1)
+
+
+# English display names for countries the route is expected to cross.
+# Nominatim returns localized names, so we normalize them for the UI.
+COUNTRY_NAMES_EN = {
+    "CH": "Switzerland",
+    "DE": "Germany",
+    "CZ": "Czechia",
+    "PL": "Poland",
+    "UA": "Ukraine",
+    "RU": "Russia",
+    "AZ": "Azerbaijan",
+    "IR": "Iran",
+    "TM": "Turkmenistan",
+    "AF": "Afghanistan",
+    "PK": "Pakistan",
+    "IN": "India",
+}
+
+
+def build_crossed_countries(geometry, sample_distance_km=100):
+    """Build an ordered list of unique countries crossed by the route.
+
+    Samples the route every sample_distance_km and reverse-geocodes each point.
+    """
+    coordinates = geometry["coordinates"]
+    if not coordinates:
+        return []
+
+    crossed = []
+    last_code = None
+    next_sample_km = 0.0
+    cumulative = 0.0
+
+    for i, coord in enumerate(coordinates):
+        if i > 0:
+            cumulative += segment_distance_km(coordinates[i - 1], coord)
+
+        if cumulative < next_sample_km and i != len(coordinates) - 1:
+            continue
+
+        next_sample_km += sample_distance_km
+        lng, lat = coord
+        print(f"  Looking up country at {cumulative:.0f} km...")
+        code, name = fetch_country_code(lat, lng)
+        if not code:
+            continue
+
+        if code != last_code:
+            crossed.append({
+                "countryCode": code,
+                "name": COUNTRY_NAMES_EN.get(code, name or code),
+                "distanceKm": round(cumulative, 2),
+            })
+            last_code = code
+
+    return crossed
+
+
 def main():
     api_key = os.environ.get("ORS_API_KEY")
     if not api_key:
@@ -211,9 +296,15 @@ def main():
     print(f"Generating walking route from {origin['name']} to {destination['name']}...")
     geometry = fetch_multi_segment_route(origin, destination, api_key)
     print(f"  Raw waypoints: {len(geometry['coordinates'])}")
+
+    print("  Building crossed-country list...")
+    crossed_countries = build_crossed_countries(geometry, sample_distance_km=100)
+    print(f"  Crossed countries: {[c['countryCode'] for c in crossed_countries]}")
+
     geometry = simplify_geometry(geometry)
     print(f"  Simplified waypoints: {len(geometry['coordinates'])}")
     route = annotate_route(geometry)
+    route["properties"]["crossedCountries"] = crossed_countries
 
     ROUTE_ASSET_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(ROUTE_ASSET_PATH, "w") as f:
