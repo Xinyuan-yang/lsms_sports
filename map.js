@@ -265,6 +265,30 @@ function isLocationCategory(category, locationTerms) {
   return false;
 }
 
+function isSpaceImage(image) {
+  const text = [
+    image.title || "",
+    image.description || "",
+    ...image.categories,
+  ].join(" ").toLowerCase();
+
+  const spaceTerms = [
+    "international space station",
+    "iss expedition",
+    "iss photographs",
+    "from the iss",
+    "earth from space",
+    "astronaut photography",
+    "space station",
+    "crew earth observation",
+    "satellite image",
+    "space shuttle",
+    "taken from space",
+  ];
+
+  return spaceTerms.some((term) => text.includes(term));
+}
+
 function getSpecificCategories(image, locationTerms) {
   return image.categories.filter(
     (cat) => !isGenericCategory(cat) && !isLocationCategory(cat, locationTerms)
@@ -418,7 +442,8 @@ async function updateLocationGallery(totalKm) {
     }
   }
 
-  const diverseImages = selectDiverseImages(images, 3, locationData?.address);
+  const landscapeImages = images.filter((img) => !isSpaceImage(img));
+  const diverseImages = selectDiverseImages(landscapeImages, 3, locationData?.address);
   renderLocationGallery(diverseImages, locationData?.display || null);
 }
 
